@@ -133,10 +133,13 @@
     };
 
     // 2. Validation rôle
-    btnRole.onclick = async () => {
+    btnRole.addEventListener("click", async () => {
       const role = roleSelect.value;
-      if(!role) return alert("Choisis un rôle");
-
+      if(!role) {
+        alert("Choisis un rôle");
+        return;
+      }
+    
       if(role === "admin"){
         if(adminPassword.value !== PASSWORD){
           alert("Mot de passe admin incorrect");
@@ -146,13 +149,13 @@
       } else {
         isAdmin = false;
       }
-
+    
       playerData.role = role;
-
+    
       // Générer un playerId unique Firebase push
       const playersRef = ref(db, 'players');
       playerId = push(playersRef).key;
-
+    
       // Ajouter joueur dans la base
       const playerRef = ref(db, `players/${playerId}`);
       await set(playerRef, {
@@ -160,6 +163,26 @@
         role: playerData.role,
         connected: true,
       });
+
+      // Assurer suppression à la déconnexion
+      onDisconnect(playerRef).remove();
+    
+      roleScreen.classList.add("hidden");
+      lobbyScreen.classList.remove("hidden");
+    
+      // Afficher le lobby
+      setupLobby();
+    
+      // Afficher panel admin ou joueur selon rôle
+      if(isAdmin){
+        adminPanel.classList.remove("hidden");
+        joueurPanel.classList.add("hidden");
+      } else {
+        adminPanel.classList.add("hidden");
+        joueurPanel.classList.remove("hidden");
+      }
+    });
+
 
       // Assurer suppression à la déconnexion
       onDisconnect(playerRef).remove();
