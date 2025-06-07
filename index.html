@@ -163,6 +163,7 @@
 
     // Étape 1 : Choisir pseudo
     btnPseudo.onclick = () => {
+      console.log("Bouton valider pseudo cliqué"); // Ajoutez cette ligne pour déboguer
       const pseudo = pseudoInput.value.trim();
       if(!pseudo) {
         alert("Entre un pseudo");
@@ -172,6 +173,7 @@
       stepPseudo.classList.add("hidden");
       stepRole.classList.remove("hidden");
     };
+
 
     // Afficher / cacher champ mot de passe admin selon rôle
     roleSelect.addEventListener("change", () => {
