@@ -1,15 +1,29 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-import { getDatabase, ref, set, onValue, push, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+import {
+  getDatabase,
+  ref,
+  set,
+  onValue,
+  push,
+  onDisconnect,
+  update,
+  remove,
+  get,
+  query,
+  orderByChild,
+  equalTo
+} from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
   authDomain: "roidestocards-d0084.firebaseapp.com",
-  databaseURL: "https://roidestocards-d0084-default-rtdb.europe-west1.firebasedatabase.app",
+  databaseURL:
+    "https://roidestocards-d0084-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "roidestocards-d0084",
   storageBucket: "roidestocards-d0084.appspot.com",
   messagingSenderId: "120053524190",
   appId: "1:120053524190:web:c68520412faff06836044f",
-  measurementId: "G-YVH6BWKZGZ"
+  measurementId: "G-YVH6BWKZGZ",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -30,9 +44,10 @@ const btnValiderRole = document.getElementById("btnValiderRole");
 const lobby = document.getElementById("lobby");
 const adminList = document.getElementById("adminList");
 const playerList = document.getElementById("playerList");
+
 const messageBox = document.getElementById("messageBox");
 
-btnPseudo.addEventListener("click", () => {
+btnPseudo.onclick = () => {
   const pseudo = pseudoInput.value.trim();
   if (!pseudo) {
     alert("Entre un pseudo");
@@ -41,7 +56,7 @@ btnPseudo.addEventListener("click", () => {
   playerData.pseudo = pseudo;
   stepPseudo.classList.add("hidden");
   stepRole.classList.remove("hidden");
-});
+};
 
 roleSelect.addEventListener("change", () => {
   if (roleSelect.value === "admin") {
@@ -52,7 +67,7 @@ roleSelect.addEventListener("change", () => {
   }
 });
 
-btnValiderRole.addEventListener("click", async () => {
+btnValiderRole.onclick = async () => {
   const role = roleSelect.value;
   const pwd = adminPassword.value;
 
@@ -60,19 +75,22 @@ btnValiderRole.addEventListener("click", async () => {
     alert("Choisis un rôle");
     return;
   }
-  if (role === "admin" && pwd !== "tocard") {
-    alert("Mot de passe admin incorrect");
-    return;
-  }
 
-  // Vérifie s'il y a déjà un admin en ligne
-  const playersRef = ref(database, "players");
-  const snapshot = await new Promise(resolve => onValue(playersRef, resolve, { onlyOnce: true }));
-  const players = snapshot.val() || {};
-  
   if (role === "admin") {
-    const adminExists = Object.values(players).some(p => p.role === "admin" && p.online === true);
-    if (adminExists) {
+    if (pwd !== "tocard") {
+      alert("Mot de passe admin incorrect");
+      return;
+    }
+
+    // Vérifier s'il y a déjà un admin connecté
+    const playersRef = ref(database, "players");
+    const snapshot = await get(playersRef);
+    const players = snapshot.val() || {};
+
+    const adminConnected = Object.values(players).some(
+      (p) => p.role === "admin" && p.online === true
+    );
+    if (adminConnected) {
       alert("Un administrateur est déjà connecté.");
       return;
     }
@@ -86,25 +104,18 @@ btnValiderRole.addEventListener("click", async () => {
     pseudo: playerData.pseudo,
     role: playerData.role,
     online: true,
-    points: 0
+    points: 0,
   };
 
-  set(playerRef, playerObject);
-
-  // Quand joueur se déconnecte, online = false
+  await set(playerRef, playerObject);
   onDisconnect(playerRef).update({ online: false });
-
-  // Si admin se déconnecte => supprime toute la base players (reset jeu)
-  if (role === "admin") {
-    onDisconnect(ref(database, "players")).remove();
-  }
 
   stepRole.classList.add("hidden");
   lobby.classList.remove("hidden");
-  messageBox.textContent = "";
 
   startLobbyListener();
-});
+  monitorAdminStatus();
+};
 
 function startLobbyListener() {
   const playersRef = ref(database, "players");
@@ -113,32 +124,62 @@ function startLobbyListener() {
 
     adminList.innerHTML = "";
     playerList.innerHTML = "";
-
-    let adminOnline = false;
+    messageBox.textContent = "";
 
     for (const id in players) {
       const p = players[id];
       if (!p || !p.pseudo || !p.role) continue;
 
       const el = document.createElement("div");
-      el.textContent = p.pseudo + (p.online === false ? " [hors ligne]" : "");
+
+      // Ajout emoji selon rôle
+      const emoji = p.role === "admin" ? "👑" : "🃏";
+
+      el.textContent = `${emoji} ${p.pseudo}`;
+      if (p.online === false) el.textContent += " [hors ligne]";
       if (id === playerId) el.style.fontWeight = "bold";
 
       if (p.role === "admin") {
         adminList.appendChild(el);
-        if (p.online === true) adminOnline = true;
       } else {
         playerList.appendChild(el);
       }
     }
+  });
+}
+
+// Fonction qui surveille l’état de l’admin et réinitialise si admin déconnecté
+function monitorAdminStatus() {
+  const playersRef = ref(database, "players");
+
+  onValue(playersRef, (snapshot) => {
+    const players = snapshot.val() || {};
+
+    // Chercher un admin connecté
+    const adminOnline = Object.entries(players).find(
+      ([id, p]) => p.role === "admin" && p.online === true
+    );
 
     if (!adminOnline) {
-      // Si admin pas en ligne, afficher message + déconnecter joueurs
-      messageBox.textContent = "L'administrateur s'est déconnecté, la partie est annulée.";
-      // Optionnel: forcer déconnexion des joueurs (ex: recharger la page)
-      // window.location.reload();
-    } else {
-      messageBox.textContent = "";
+      // Admin déconnecté, afficher message et réinitialiser la base
+      messageBox.textContent =
+        "L'administrateur s'est déconnecté. La partie est annulée.";
+
+      // Supprimer tous les joueurs (réinitialiser la base)
+      remove(ref(database, "players"));
+
+      // Remettre l'interface au début
+      lobby.classList.add("hidden");
+      stepRole.classList.add("hidden");
+      stepPseudo.classList.remove("hidden");
+
+      // Nettoyer les listes
+      adminList.innerHTML = "";
+      playerList.innerHTML = "";
+
+      // Réinitialiser variables locales
+      playerId = null;
+      playerData = { pseudo: null, role: null };
     }
   });
 }
