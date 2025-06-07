@@ -9,9 +9,6 @@ import {
   update,
   remove,
   get,
-  query,
-  orderByChild,
-  equalTo
 } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -46,6 +43,17 @@ const adminList = document.getElementById("adminList");
 const playerList = document.getElementById("playerList");
 
 const messageBox = document.getElementById("messageBox");
+
+// Helper : retrouver playerId par pseudo (retourne null si absent)
+async function findPlayerIdByPseudo(pseudo) {
+  const playersRef = ref(database, "players");
+  const snapshot = await get(playersRef);
+  const players = snapshot.val() || {};
+  for (const id in players) {
+    if (players[id].pseudo === pseudo) return id;
+  }
+  return null;
+}
 
 btnPseudo.onclick = () => {
   const pseudo = pseudoInput.value.trim();
@@ -94,21 +102,59 @@ btnValiderRole.onclick = async () => {
       alert("Un administrateur est déjà connecté.");
       return;
     }
+  } else {
+    // Pour joueur, vérifier que pseudo unique (online=true)
+    const playersRef = ref(database, "players");
+    const snapshot = await get(playersRef);
+    const players = snapshot.val() || {};
+
+    const pseudoTakenOnline = Object.values(players).some(
+      (p) => p.pseudo === playerData.pseudo && p.online === true
+    );
+    if (pseudoTakenOnline) {
+      alert(
+        "Ce pseudo est déjà utilisé par un joueur actuellement en ligne. Choisis-en un autre."
+      );
+      return;
+    }
   }
 
   playerData.role = role;
-  playerId = push(ref(database, "players")).key;
-  const playerRef = ref(database, `players/${playerId}`);
 
-  const playerObject = {
-    pseudo: playerData.pseudo,
-    role: playerData.role,
-    online: true,
-    points: 0,
-  };
+  // Essayer de récupérer un ancien playerId avec ce pseudo (ex joueur reconnecte)
+  const existingId = await findPlayerIdByPseudo(playerData.pseudo);
 
-  await set(playerRef, playerObject);
-  onDisconnect(playerRef).update({ online: false });
+  if (existingId) {
+    // Récupérer les données existantes et les mettre à jour online=true, role etc
+    playerId = existingId;
+    const playerRef = ref(database, `players/${playerId}`);
+
+    const snapshot = await get(playerRef);
+    const oldData = snapshot.val() || {};
+
+    const updatedData = {
+      ...oldData,
+      role: playerData.role,
+      online: true,
+    };
+
+    await set(playerRef, updatedData);
+    onDisconnect(playerRef).update({ online: false });
+  } else {
+    // Créer nouveau joueur
+    playerId = push(ref(database, "players")).key;
+    const playerRef = ref(database, `players/${playerId}`);
+
+    const playerObject = {
+      pseudo: playerData.pseudo,
+      role: playerData.role,
+      online: true,
+      points: 0,
+    };
+
+    await set(playerRef, playerObject);
+    onDisconnect(playerRef).update({ online: false });
+  }
 
   stepRole.classList.add("hidden");
   lobby.classList.remove("hidden");
@@ -133,7 +179,7 @@ function startLobbyListener() {
       const el = document.createElement("div");
 
       // Ajout emoji selon rôle
-      const emoji = p.role === "admin" ? "👑" : "🃏";
+      const emoji = p.role === "admin" ? "👑" : "🎮";
 
       el.textContent = `${emoji} ${p.pseudo}`;
       if (p.online === false) el.textContent += " [hors ligne]";
@@ -148,7 +194,6 @@ function startLobbyListener() {
   });
 }
 
-// Fonction qui surveille l’état de l’admin et réinitialise si admin déconnecté
 function monitorAdminStatus() {
   const playersRef = ref(database, "players");
 
