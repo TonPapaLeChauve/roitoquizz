@@ -88,27 +88,23 @@ function startLobbyListener() {
   const playersRef = ref(database, "players");
   onValue(playersRef, (snapshot) => {
     const players = snapshot.val() || {};
+
     adminList.innerHTML = "";
     playerList.innerHTML = "";
 
     for (const id in players) {
       const p = players[id];
       if (!p || !p.pseudo || !p.role) continue;
-    
+
       const el = document.createElement("div");
-      el.textContent = p.pseudo;
-      if (!p.online) {
-        el.textContent += " [hors ligne]";
-        el.classList.add("offline");
-      }
+      el.textContent = p.pseudo + (p.online === false ? " [hors ligne]" : "");
       if (id === playerId) el.style.fontWeight = "bold";
-    
+
       if (p.role === "admin") {
         adminList.appendChild(el);
       } else {
         playerList.appendChild(el);
       }
     }
-
   });
 }
