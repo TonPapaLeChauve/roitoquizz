@@ -164,9 +164,10 @@ btnValiderRole.addEventListener("click", () => {
 // Afficher le champ mot de passe seulement si admin sélectionné
 roleSelect.addEventListener("change", () => {
   if (roleSelect.value === "admin") {
-    adminPasswordInput.style.display = "block";
+    adminPassword.classList.remove("hidden");
   } else {
-    adminPasswordInput.style.display = "none";
+    adminPassword.classList.add("hidden");
+    adminPassword.value = "";
   }
 });
 
