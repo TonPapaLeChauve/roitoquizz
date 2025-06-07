@@ -171,5 +171,25 @@ roleSelect.addEventListener("change", () => {
   }
 });
 
+// Forcer la valeur par défaut au chargement
+roleSelect.value = "";
+
+// Fonction pour afficher ou cacher le champ mot de passe selon rôle
+function checkRole() {
+  if (roleSelect.value === "admin") {
+    adminPassword.classList.remove("hidden");
+  } else {
+    adminPassword.classList.add("hidden");
+    adminPassword.value = "";
+  }
+}
+
+// Appel initial au chargement
+checkRole();
+
+// Appel à chaque changement
+roleSelect.addEventListener("change", checkRole);
+
+
 btnLancerChrono.addEventListener("click", lancerChrono);
 btnEnvoyerReponse.addEventListener("click", envoyerReponse);
