@@ -3,22 +3,84 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test Firebase</title>
+  <title>Quiz en Temps Réel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      text-align: center;
+      padding: 1rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    input, select, button {
+      font-size: 1.2rem;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      width: 80%;
+      max-width: 300px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      border-radius: 4px;
+      border: none;
+    }
+    button {
+      cursor: pointer;
+      background: gold;
+      color: #111;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: orange;
+    }
+    .hidden {
+      display: none !important;
+    }
+    #lobbyList {
+      text-align: left;
+      max-height: 150px;
+      overflow-y: auto;
+      background: #222;
+      padding: 0.5rem;
+      margin: 1rem auto;
+      border-radius: 6px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Test Firebase</h1>
-  <button id="writeData">Écrire des données</button>
-  <button id="readData">Lire des données</button>
-  <div id="dataOutput"></div>
+  <div id="stepPseudo">
+    <h2>Choisis ton pseudo</h2>
+    <input type="text" id="pseudoInput" placeholder="Ton pseudo" autocomplete="off" />
+    <button id="btnPseudo">Valider pseudo</button>
+  </div>
+
+  <div id="stepRole" class="hidden">
+    <h2>Choisis ton rôle</h2>
+    <select id="roleSelect">
+      <option value="">-- Choisir --</option>
+      <option value="admin">Admin</option>
+      <option value="joueur">Joueur</option>
+    </select>
+    <input type="password" id="adminPassword" placeholder="Mot de passe admin" class="hidden" autocomplete="off" />
+    <button id="btnValiderRole">Valider rôle</button>
+  </div>
+
+  <div id="lobby" class="hidden">
+    <h2>Lobby - Joueurs connectés</h2>
+    <div id="lobbyList"></div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+    import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
       authDomain: "roidestocards-d0084.firebaseapp.com",
-      databaseURL: "https://roidestocards-d0084.firebaseio.com",
+      databaseURL: "https://roidestocards-d0084-default-rtdb.europe-west1.firebasedatabase.app/",
       projectId: "roidestocards-d0084",
       storageBucket: "roidestocards-d0084.appspot.com",
       messagingSenderId: "120053524190",
@@ -29,34 +91,78 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    document.getElementById('writeData').addEventListener('click', () => {
-      const testDataRef = ref(database, 'test/data');
-      set(testDataRef, {
-        message: "Bonjour, Firebase!",
-        timestamp: Date.now()
-      }).then(() => {
-        console.log("Données écrites avec succès.");
-        alert("Données écrites avec succès.");
-      }).catch((error) => {
-        console.error("Erreur lors de l'écriture des données : ", error);
-        alert("Erreur lors de l'écriture des données.");
-      });
+    let playerId = null;
+    let playerData = { pseudo: null, role: null };
+
+    const stepPseudo = document.getElementById("stepPseudo");
+    const pseudoInput = document.getElementById("pseudoInput");
+    const btnPseudo = document.getElementById("btnPseudo");
+
+    const stepRole = document.getElementById("stepRole");
+    const roleSelect = document.getElementById("roleSelect");
+    const adminPassword = document.getElementById("adminPassword");
+    const btnValiderRole = document.getElementById("btnValiderRole");
+
+    const lobby = document.getElementById("lobby");
+    const lobbyList = document.getElementById("lobbyList");
+
+    btnPseudo.onclick = () => {
+      const pseudo = pseudoInput.value.trim();
+      if (!pseudo) {
+        alert("Entre un pseudo");
+        return;
+      }
+      playerData.pseudo = pseudo;
+      stepPseudo.classList.add("hidden");
+      stepRole.classList.remove("hidden");
+    };
+
+    roleSelect.addEventListener("change", () => {
+      if (roleSelect.value === "admin") {
+        adminPassword.classList.remove("hidden");
+      } else {
+        adminPassword.classList.add("hidden");
+        adminPassword.value = "";
+      }
     });
 
-    document.getElementById('readData').addEventListener('click', () => {
-      const testDataRef = ref(database, 'test/data');
-      onValue(testDataRef, (snapshot) => {
-        const data = snapshot.val();
-        const outputDiv = document.getElementById('dataOutput');
-        if (data) {
-          outputDiv.innerHTML = `Message: ${data.message}, Timestamp: ${new Date(data.timestamp).toLocaleString()}`;
-          console.log("Données lues : ", data);
-        } else {
-          outputDiv.innerHTML = "Aucune donnée disponible.";
-          console.log("Aucune donnée disponible.");
+    btnValiderRole.onclick = () => {
+      const role = roleSelect.value;
+      const pwd = adminPassword.value;
+      if (!role) {
+        alert("Choisis un rôle");
+        return;
+      }
+      if (role === "admin" && pwd !== "tocard") {
+        alert("Mot de passe admin incorrect");
+        return;
+      }
+
+      playerData.role = role;
+      const playersRef = ref(database, "players");
+      playerId = push(playersRef).key;
+      const playerRef = ref(database, `players/${playerId}`);
+      set(playerRef, { pseudo: playerData.pseudo, role: playerData.role });
+
+      stepRole.classList.add("hidden");
+      lobby.classList.remove("hidden");
+      startLobbyListener();
+    };
+
+    function startLobbyListener() {
+      const playersRef = ref(database, "players");
+      onValue(playersRef, (snapshot) => {
+        const players = snapshot.val() || {};
+        lobbyList.innerHTML = "";
+        for (const id in players) {
+          const p = players[id];
+          const span = document.createElement("div");
+          span.textContent = p.pseudo + (p.role === "admin" ? " (Admin)" : "");
+          if (id === playerId) span.style.fontWeight = "bold";
+          lobbyList.appendChild(span);
         }
       });
-    });
+    }
   </script>
 </body>
 </html>
