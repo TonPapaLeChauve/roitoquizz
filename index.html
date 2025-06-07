@@ -260,4 +260,51 @@
       // Initialiser timer
       set(ref(db, 'quiz/timeLeft'), 30);
 
-      // Lancer le décompte
+      // Lancer le décompte côté serveur simulé ici côté client (à chaque client, synchro Firebase)
+      startTimer(30);
+    };
+
+    function startTimer(seconds){
+      clearInterval(intervalId);
+      let time = seconds;
+
+      intervalId = setInterval(() => {
+        time--;
+        if(time < 0){
+          clearInterval(intervalId);
+          set(ref(db, 'quiz/timeLeft'), 0);
+          return;
+        }
+        set(ref(db, 'quiz/timeLeft'), time);
+      }, 1000);
+    }
+
+    // 5. Joueur envoie réponse
+    btnEnvoyerReponse.onclick = () => {
+      const reponse = reponseInput.value.trim();
+      if(!reponse) return alert("Écris ta réponse");
+
+      // Ajouter la réponse dans la base Firebase sous quiz/responses avec pseudo
+      const responsesRef = ref(db, 'quiz/responses');
+      const newResponseRef = push(responsesRef);
+      set(newResponseRef, {
+        pseudo: playerData.pseudo,
+        reponse
+      });
+
+      alert("Réponse enregistrée !");
+      reponseInput.value = "";
+      joueurPanel.style.display = "none"; // cache le formulaire jusqu'à la prochaine question
+    };
+
+    // Gestion affichage mot de passe admin dynamique
+    roleSelect.addEventListener("change", () => {
+      if(roleSelect.value === "admin"){
+        adminPassword.classList.remove("hidden");
+      } else {
+        adminPassword.classList.add("hidden");
+      }
+    });
+  </script>
+</body>
+</html>
