@@ -1,8 +1,6 @@
-// Import the functions you need from the Firebase SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+import { getDatabase, ref, set, onValue, push, update } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
   authDomain: "roidestocards-d0084.firebaseapp.com",
@@ -14,15 +12,12 @@ const firebaseConfig = {
   measurementId: "G-YVH6BWKZGZ"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// Global variables
 let playerId = null;
 let playerData = { pseudo: null, role: null };
 
-// DOM Elements
 const stepPseudo = document.getElementById("stepPseudo");
 const pseudoInput = document.getElementById("pseudoInput");
 const btnPseudo = document.getElementById("btnPseudo");
@@ -33,13 +28,13 @@ const adminPassword = document.getElementById("adminPassword");
 const btnValiderRole = document.getElementById("btnValiderRole");
 
 const lobby = document.getElementById("lobby");
-const lobbyList = document.getElementById("lobbyList");
+const adminList = document.getElementById("adminList");
+const playerList = document.getElementById("playerList");
 
-// Step 1: Choose pseudo
 btnPseudo.onclick = () => {
   const pseudo = pseudoInput.value.trim();
   if (!pseudo) {
-    alert("Entrez un pseudo");
+    alert("Entre un pseudo");
     return;
   }
   playerData.pseudo = pseudo;
@@ -47,7 +42,6 @@ btnPseudo.onclick = () => {
   stepRole.classList.remove("hidden");
 };
 
-// Show/hide admin password field based on role
 roleSelect.addEventListener("change", () => {
   if (roleSelect.value === "admin") {
     adminPassword.classList.remove("hidden");
@@ -57,12 +51,11 @@ roleSelect.addEventListener("change", () => {
   }
 });
 
-// Step 2: Validate role + admin password if needed + register in Firebase
 btnValiderRole.onclick = () => {
   const role = roleSelect.value;
   const pwd = adminPassword.value;
   if (!role) {
-    alert("Choisissez un rôle");
+    alert("Choisis un rôle");
     return;
   }
   if (role === "admin" && pwd !== "tocard") {
@@ -71,28 +64,51 @@ btnValiderRole.onclick = () => {
   }
 
   playerData.role = role;
-  const playersRef = ref(database, "players");
-  playerId = push(playersRef).key;
+  playerId = push(ref(database, "players")).key;
   const playerRef = ref(database, `players/${playerId}`);
-  set(playerRef, { pseudo: playerData.pseudo, role: playerData.role });
+  set(playerRef, {
+    pseudo: playerData.pseudo,
+    role: playerData.role,
+    lastSeen: Date.now(),
+    points: 0
+  });
 
   stepRole.classList.add("hidden");
   lobby.classList.remove("hidden");
+
   startLobbyListener();
+  startHeartbeat();
 };
 
-// Listen for real-time updates on players list
 function startLobbyListener() {
   const playersRef = ref(database, "players");
   onValue(playersRef, (snapshot) => {
+    const now = Date.now();
     const players = snapshot.val() || {};
-    lobbyList.innerHTML = "";
+    adminList.innerHTML = "";
+    playerList.innerHTML = "";
+
     for (const id in players) {
       const p = players[id];
-      const span = document.createElement("div");
-      span.textContent = p.pseudo + (p.role === "admin" ? " (Admin)" : "");
-      if (id === playerId) span.style.fontWeight = "bold";
-      lobbyList.appendChild(span);
+      const inactive = now - (p.lastSeen || 0) > 2 * 60 * 1000; // 2 min
+      const displayName = `${p.pseudo}${p.role === "admin" ? " (Admin)" : ""}${inactive ? " [Hors ligne]" : ""}`;
+      const el = document.createElement("div");
+      el.textContent = displayName;
+      if (id === playerId) el.style.fontWeight = "bold";
+
+      if (p.role === "admin") {
+        adminList.appendChild(el);
+      } else {
+        playerList.appendChild(el);
+      }
     }
   });
+}
+
+// Ping Firebase every 15s to say "I'm still here"
+function startHeartbeat() {
+  const playerRef = ref(database, `players/${playerId}`);
+  setInterval(() => {
+    update(playerRef, { lastSeen: Date.now() });
+  }, 15000);
 }
