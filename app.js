@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-import { getDatabase, ref, set, onValue, push, update } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+import { getDatabase, ref, set, onValue, push, onDisconnect, update } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
@@ -66,34 +66,39 @@ btnValiderRole.onclick = () => {
   playerData.role = role;
   playerId = push(ref(database, "players")).key;
   const playerRef = ref(database, `players/${playerId}`);
-  set(playerRef, {
+  
+  const playerObject = {
     pseudo: playerData.pseudo,
     role: playerData.role,
-    lastSeen: Date.now(),
+    online: true,
     points: 0
-  });
+  };
+
+  set(playerRef, playerObject);
+  // Déconnexion = online passe à false
+  onDisconnect(playerRef).update({ online: false });
 
   stepRole.classList.add("hidden");
   lobby.classList.remove("hidden");
 
   startLobbyListener();
-  startHeartbeat();
 };
 
 function startLobbyListener() {
   const playersRef = ref(database, "players");
   onValue(playersRef, (snapshot) => {
-    const now = Date.now();
     const players = snapshot.val() || {};
     adminList.innerHTML = "";
     playerList.innerHTML = "";
 
     for (const id in players) {
       const p = players[id];
-      const inactive = now - (p.lastSeen || 0) > 2 * 60 * 1000; // 2 min
-      const displayName = `${p.pseudo}${p.role === "admin" ? " (Admin)" : ""}${inactive ? " [Hors ligne]" : ""}`;
       const el = document.createElement("div");
-      el.textContent = displayName;
+      el.textContent = p.pseudo;
+      if (!p.online) {
+        el.textContent += " [hors ligne]";
+        el.classList.add("offline");
+      }
       if (id === playerId) el.style.fontWeight = "bold";
 
       if (p.role === "admin") {
@@ -103,12 +108,4 @@ function startLobbyListener() {
       }
     }
   });
-}
-
-// Ping Firebase every 15s to say "I'm still here"
-function startHeartbeat() {
-  const playerRef = ref(database, `players/${playerId}`);
-  setInterval(() => {
-    update(playerRef, { lastSeen: Date.now() });
-  }, 15000);
 }
