@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Le Roi des Tocards - Réponse</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #111; color: #f1f1f1; text-align: center; padding: 2rem; }
+    h1 { color: gold; }
+    input, button { padding: 0.5rem; font-size: 1.2rem; margin-top: 1rem; }
+    #countdown { font-size: 2rem; margin-top: 1rem; color: #ff4444; }
+    #responseForm { display: flex; flex-direction: column; align-items: center; }
+  </style>
+</head>
+<body>
+  <h1>LE ROI DES TOCARDS</h1>
+  <h2>Que le tocard gagne !</h2>
+
+  <p id="question">En attente de la question...</p>
+
+  <form id="responseForm">
+    <input type="text" id="pseudo" placeholder="Ton pseudo" required />
+    <input type="text" id="reponse" placeholder="Ta réponse" required />
+    <button type="submit">Envoyer</button>
+  </form>
+
+  <div id="countdown">30</div>
+
+  <script>
+    let timeLeft = 30;
+    const countdownEl = document.getElementById("countdown");
+    const form = document.getElementById("responseForm");
+
+    const interval = setInterval(() => {
+      if (timeLeft <= 0) {
+        clearInterval(interval);
+        countdownEl.textContent = "Temps écoulé !";
+        form.querySelector("button").disabled = true;
+        form.querySelector("#reponse").disabled = true;
+      } else {
+        countdownEl.textContent = timeLeft;
+        timeLeft--;
+      }
+    }, 1000);
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const data = {
+        pseudo: form.pseudo.value,
+        reponse: form.reponse.value,
+        timestamp: new Date().toISOString()
+      };
+
+      // Envoi simulé (remplace par API ou enregistrement si besoin)
+      console.log("Réponse envoyée :", data);
+      alert("Réponse enregistrée !");
+
+      form.reset();
+    });
+
+    // Pour changer la question dynamiquement (manuellement ici)
+    document.getElementById("question").textContent = "Cite un animal en 3 lettres";
+  </script>
+</body>
+</html>
