@@ -1,37 +1,16 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>    
-    <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script>
-    // Ta config Firebase ici
-    const firebaseConfig = {
-      apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
-      authDomain: "roidestocards-d0084.firebaseapp.com",
-      databaseURL: "https://ton-projet-default-rtdb.firebaseio.com",
-      projectId: "roidestocards-d0084",
-      storageBucket: "roidestocards-d0084.firebasestorage.app",
-      messagingSenderId: "120053524190",
-      appId: "1:120053524190:web:c68520412faff06836044f",
-      measurementId: "G-YVH6BWKZGZ"
-    };
-  
-    // Initialiser Firebase
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-  </script>
-
+<head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Le Roi des Tocards - Réponse</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Le Roi des Tocards - Quiz Firebase</title>
   <style>
     body { font-family: Arial, sans-serif; background: #111; color: #f1f1f1; text-align: center; padding: 2rem; }
     h1 { color: gold; }
     input, button, select { padding: 0.5rem; font-size: 1.2rem; margin-top: 1rem; }
     #countdown { font-size: 2rem; margin-top: 1rem; color: #ff4444; }
     #responseForm, #roleSelect, #adminPanel, #resultsPanel { display: flex; flex-direction: column; align-items: center; margin-top: 2rem; }
-    #responseList { margin-top: 1rem; text-align: left; }
+    #responseList { margin-top: 1rem; text-align: left; max-width: 300px; }
   </style>
 </head>
 <body>
@@ -46,13 +25,13 @@
       <option value="joueur">Joueur</option>
     </select>
     <input type="password" id="adminPassword" placeholder="Mot de passe admin" style="display:none" />
-    <button onclick="validerRole()">Valider</button>
+    <button id="btnValiderRole">Valider</button>
   </div>
 
   <div id="adminPanel" style="display:none">
     <p id="question">En attente de la question...</p>
     <input type="text" id="questionInput" placeholder="Nouvelle question" />
-    <button onclick="lancerChrono()">Lancer le chrono</button>
+    <button id="btnLancerChrono">Lancer le chrono</button>
     <div id="countdown"></div>
     <div id="resultsPanel">
       <h3>Réponses des joueurs :</h3>
@@ -64,79 +43,9 @@
     <p id="joueurQuestion"></p>
     <input type="text" id="pseudo" placeholder="Ton pseudo" required />
     <input type="text" id="reponse" placeholder="Ta réponse" required />
-    <button onclick="envoyerReponse()">Envoyer</button>
+    <button id="btnEnvoyerReponse">Envoyer</button>
   </div>
 
-  <script>
-    const PASSWORD = "tocard";
-    let isAdmin = false;
-    let timeLeft = 30;
-    let responses = [];
-    let interval;
-
-    function validerRole() {
-      const role = document.getElementById("role").value;
-      const adminPass = document.getElementById("adminPassword").value;
-
-      if (role === "admin") {
-        document.getElementById("adminPassword").style.display = "block";
-        if (adminPass === PASSWORD) {
-          isAdmin = true;
-          document.getElementById("roleSelect").style.display = "none";
-          document.getElementById("adminPanel").style.display = "flex";
-        } else if (adminPass !== "") {
-          alert("Mot de passe incorrect");
-        }
-      } else if (role === "joueur") {
-        document.getElementById("roleSelect").style.display = "none";
-        document.getElementById("responseForm").style.display = "flex";
-      }
-    }
-
-    function lancerChrono() {
-      const questionText = document.getElementById("questionInput").value;
-      if (!questionText) return alert("Entre une question");
-
-      document.getElementById("question").textContent = questionText;
-      document.getElementById("joueurQuestion").textContent = questionText;
-      timeLeft = 30;
-      responses = [];
-      document.getElementById("responseList").innerHTML = "";
-      document.getElementById("countdown").textContent = timeLeft;
-      document.getElementById("responseForm").style.display = "flex";
-
-      interval = setInterval(() => {
-        timeLeft--;
-        document.getElementById("countdown").textContent = timeLeft;
-        if (timeLeft <= 0) {
-          clearInterval(interval);
-          document.getElementById("countdown").textContent = "Temps écoulé !";
-          document.getElementById("responseForm").style.display = "none";
-          afficherReponses();
-        }
-      }, 1000);
-    }
-
-    function envoyerReponse() {
-      const pseudo = document.getElementById("pseudo").value;
-      const reponse = document.getElementById("reponse").value;
-
-      if (!pseudo || !reponse) return alert("Remplis tous les champs");
-
-      responses.push({ pseudo, reponse });
-      alert("Réponse enregistrée !");
-      document.getElementById("responseForm").style.display = "none";
-    }
-
-    function afficherReponses() {
-      const list = document.getElementById("responseList");
-      list.innerHTML = "";
-      responses.forEach(r => {
-        const p = document.createElement("p");
-        p.textContent = `${r.pseudo} : ${r.reponse}`;
-        list.appendChild(p);
-      });
-    }
-  </script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
