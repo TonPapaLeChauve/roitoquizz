@@ -1,26 +1,10 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quiz en Temps Réel</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Temps Réel</title>
   <style>
-    .lobby-box {
-      background: #222;
-      border: 2px solid #555;
-      border-radius: 8px;
-      padding: 1rem;
-      margin-bottom: 1.5rem;
-      text-align: left;
-    }
-    .lobby-box div {
-      padding: 0.3rem 0;
-    }
-    .offline {
-      opacity: 0.5;
-      font-style: italic;
-    }
-
     body {
       font-family: Arial, sans-serif;
       background: #111;
@@ -55,14 +39,20 @@
     .hidden {
       display: none !important;
     }
-    #lobbyList {
+    .list-container {
       text-align: left;
-      max-height: 150px;
-      overflow-y: auto;
       background: #222;
-      padding: 0.5rem;
-      margin: 1rem auto;
+      padding: 1rem;
+      margin-top: 1rem;
       border-radius: 6px;
+    }
+    .list-container h3 {
+      margin-bottom: 0.5rem;
+      color: gold;
+    }
+    .offline {
+      color: #aaa;
+      font-style: italic;
     }
   </style>
 </head>
@@ -80,23 +70,25 @@
       <option value="admin">Admin</option>
       <option value="joueur">Joueur</option>
     </select>
-    <input type="password" id="adminPassword" placeholder="Mot de passe admin" class="hidden" autocomplete="off" />
+    <input type="password" id="adminPassword" class="hidden" placeholder="Mot de passe admin" autocomplete="off" />
     <button id="btnValiderRole">Valider rôle</button>
   </div>
 
   <div id="lobby" class="hidden">
-    <h2>Admins</h2>
-    <div id="adminList" class="lobby-box"></div>
-  
-    <h2>Joueurs</h2>
-    <div id="playerList" class="lobby-box"></div>
+    <h2>Lobby</h2>
+    <div class="list-container">
+      <h3>👑 Admin</h3>
+      <div id="adminList"></div>
+    </div>
+    <div class="list-container">
+      <h3>🎮 Joueurs</h3>
+      <div id="playerList"></div>
+    </div>
   </div>
-
-
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+    import { getDatabase, ref, set, onValue, push, onDisconnect, update } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
@@ -125,7 +117,8 @@
     const btnValiderRole = document.getElementById("btnValiderRole");
 
     const lobby = document.getElementById("lobby");
-    const lobbyList = document.getElementById("lobbyList");
+    const adminList = document.getElementById("adminList");
+    const playerList = document.getElementById("playerList");
 
     btnPseudo.onclick = () => {
       const pseudo = pseudoInput.value.trim();
@@ -160,13 +153,26 @@
       }
 
       playerData.role = role;
-      const playersRef = ref(database, "players");
-      playerId = push(playersRef).key;
+      playerId = push(ref(database, "players")).key;
       const playerRef = ref(database, `players/${playerId}`);
-      set(playerRef, { pseudo: playerData.pseudo, role: playerData.role });
+
+      const playerObject = {
+        pseudo: playerData.pseudo,
+        role: playerData.role,
+        online: true,
+        points: 0,
+        disconnectedAt: null
+      };
+
+      set(playerRef, playerObject);
+      onDisconnect(playerRef).update({
+        online: false,
+        disconnectedAt: Date.now()
+      });
 
       stepRole.classList.add("hidden");
       lobby.classList.remove("hidden");
+
       startLobbyListener();
     };
 
@@ -174,13 +180,29 @@
       const playersRef = ref(database, "players");
       onValue(playersRef, (snapshot) => {
         const players = snapshot.val() || {};
-        lobbyList.innerHTML = "";
+        adminList.innerHTML = "";
+        playerList.innerHTML = "";
+
+        const now = Date.now();
+        const TWO_MIN = 2 * 60 * 1000;
+
         for (const id in players) {
           const p = players[id];
-          const span = document.createElement("div");
-          span.textContent = p.pseudo + (p.role === "admin" ? " (Admin)" : "");
-          if (id === playerId) span.style.fontWeight = "bold";
-          lobbyList.appendChild(span);
+          if (!p || !p.pseudo || !p.role) continue;
+
+          const isOfflineTooLong = p.online === false && p.disconnectedAt && now - p.disconnectedAt > TWO_MIN;
+          if (isOfflineTooLong) continue;
+
+          const el = document.createElement("div");
+          el.textContent = p.pseudo + (p.online === false ? " [hors ligne]" : "");
+          if (p.online === false) el.classList.add("offline");
+          if (id === playerId) el.style.fontWeight = "bold";
+
+          if (p.role === "admin") {
+            adminList.appendChild(el);
+          } else {
+            playerList.appendChild(el);
+          }
         }
       });
     }
