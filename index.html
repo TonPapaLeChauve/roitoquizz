@@ -113,14 +113,15 @@
     let intervalId = null;
 
     // 1. Validation pseudo
-    btnPseudo.onclick = () => {
+    btnPseudo.addEventListener("click", () => {
       const pseudo = pseudoInput.value.trim();
       if(!pseudo) return alert("Entre un pseudo");
-
+    
       playerData = { pseudo };
       pseudoScreen.classList.add("hidden");
       roleScreen.classList.remove("hidden");
-    };
+    });
+
 
     // Afficher mot de passe si admin choisi
     roleSelect.onchange = () => {
