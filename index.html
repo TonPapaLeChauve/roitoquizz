@@ -61,18 +61,14 @@
   </div>
 
   <!-- Étape 2 : Choix du rôle -->
-  <div id="roleScreen" class="hidden">
-    <p>Choisis ton rôle :</p>
-    <select id="roleSelect">
-      <option value="">-- Choisir --</option>
-      <option value="admin">Admin</option>
-      <option value="joueur">Joueur</option>
-    </select>
-    <br />
-    <input type="password" id="adminPassword" placeholder="Mot de passe admin" class="hidden" autocomplete="off" />
-    <br />
-    <button id="btnRole">Valider</button>
-  </div>
+  <select id="roleSelect">
+    <option value="">-- Choisir --</option>
+    <option value="admin">Admin</option>
+    <option value="joueur">Joueur</option>
+  </select>
+  <br />
+  <input type="password" id="adminPassword" placeholder="Mot de passe admin" class="hidden" autocomplete="off" />
+
 
   <!-- Lobby avec liste des joueurs -->
   <div id="lobbyScreen" class="hidden">
