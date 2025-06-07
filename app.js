@@ -172,4 +172,19 @@ async function cancelGame() {
 
   await remove(ref(database, "players"));
 
-  // Reset variables
+  // Reset variables locales
+  playerId = null;
+  playerData = { pseudo: null, role: null };
+
+  // Reset UI
+  stepPseudo.classList.remove("hidden");
+  stepRole.classList.add("hidden");
+  lobby.classList.add("hidden");
+
+  pseudoInput.value = "";
+  roleSelect.value = "";
+  adminPassword.value = "";
+  adminPassword.classList.add("hidden");
+
+  gameCancelled = false;
+}
