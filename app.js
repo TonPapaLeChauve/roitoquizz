@@ -1,13 +1,14 @@
 // Initialisation Firebase
 const firebaseConfig = {
-  apiKey: "VOTRE_API_KEY",
-  authDomain: "VOTRE_AUTH_DOMAIN",
-  databaseURL: "VOTRE_DATABASE_URL",
-  projectId: "VOTRE_PROJECT_ID",
-  storageBucket: "VOTRE_STORAGE_BUCKET",
-  messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
-  appId: "VOTRE_APP_ID"
+  apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
+  authDomain: "roidestocards-d0084.firebaseapp.com",
+  projectId: "roidestocards-d0084",
+  storageBucket: "roidestocards-d0084.firebasestorage.app",
+  messagingSenderId: "120053524190",
+  appId: "1:120053524190:web:c68520412faff06836044f",
+  measurementId: "G-YVH6BWKZGZ"
 };
+
 
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
