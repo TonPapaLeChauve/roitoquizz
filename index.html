@@ -8,104 +8,117 @@
     body {
       font-family: Arial, sans-serif;
       background: #111;
-      color: #f1f1f1;
+      color: #eee;
       text-align: center;
-      padding: 2rem;
+      padding: 1rem;
+      max-width: 600px;
+      margin: auto;
     }
-    h1 { color: gold; }
-    input, button, select {
-      padding: 0.5rem;
+    input, select, button {
       font-size: 1.2rem;
+      padding: 0.5rem;
       margin: 0.5rem 0;
+      width: 80%;
+      max-width: 300px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      border-radius: 4px;
+      border: none;
     }
-    .hidden { display: none !important; }
+    button {
+      cursor: pointer;
+      background: gold;
+      color: #111;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: orange;
+    }
+    .hidden {
+      display: none !important;
+    }
     #lobbyList {
       text-align: left;
-      max-width: 300px;
-      margin: 1rem auto;
-      border: 1px solid #444;
-      padding: 1rem;
-      border-radius: 8px;
+      max-height: 150px;
+      overflow-y: auto;
       background: #222;
-      min-height: 100px;
+      padding: 0.5rem;
+      margin: 1rem auto;
+      border-radius: 6px;
     }
     #responseList {
-      max-width: 400px;
-      margin: 1rem auto;
-      text-align: left;
-      background: #222;
-      padding: 1rem;
-      border-radius: 8px;
-      border: 1px solid #444;
-      max-height: 200px;
+      max-height: 150px;
       overflow-y: auto;
-      min-height: 100px;
+      background: #222;
+      padding: 0.5rem;
+      margin-top: 1rem;
+      text-align: left;
+      border-radius: 6px;
     }
-    #countdown {
+    #countdownAdmin, #countdownJoueur {
       font-size: 2rem;
-      color: #ff4444;
-      margin: 1rem 0;
+      color: #f44;
+      margin: 0.5rem 0;
+    }
+    #questionDisplay, #joueurQuestion {
+      font-size: 1.3rem;
+      margin: 1rem 0 0.5rem 0;
     }
   </style>
 </head>
 <body>
 
   <h1>LE ROI DES TOCARDS</h1>
-
-  <!-- Étape 1 : Choix du pseudo -->
-  <div id="pseudoScreen">
-    <p>Choisis ton pseudo :</p>
+  <div id="stepPseudo">
+    <h2>Choisis ton pseudo</h2>
     <input type="text" id="pseudoInput" placeholder="Ton pseudo" autocomplete="off" />
-    <br />
-    <button id="btnPseudo">Valider</button>
+    <button id="btnPseudo">Valider pseudo</button>
   </div>
 
-  <!-- Étape 2 : Choix du rôle -->
-  <select id="roleSelect">
-    <option value="">-- Choisir --</option>
-    <option value="admin">Admin</option>
-    <option value="joueur">Joueur</option>
-  </select>
-  <br />
-  <input type="password" id="adminPassword" placeholder="Mot de passe admin" class="hidden" autocomplete="off" />
-
-
-  <!-- Lobby avec liste des joueurs -->
-  <div id="lobbyScreen" class="hidden">
-    <h2>Lobby - Joueurs connectés :</h2>
-    <div id="lobbyList">Chargement...</div>
+  <div id="stepRole" class="hidden">
+    <h2>Choisis ton rôle</h2>
+    <select id="roleSelect">
+      <option value="">-- Choisir --</option>
+      <option value="admin">Admin</option>
+      <option value="joueur">Joueur</option>
+    </select>
+    <input type="password" id="adminPassword" placeholder="Mot de passe admin" class="hidden" autocomplete="off" />
+    <button id="btnValiderRole">Valider rôle</button>
   </div>
 
-  <!-- Panel admin -->
+  <div id="lobby" class="hidden">
+    <h2>Lobby - Joueurs connectés</h2>
+    <div id="lobbyList"></div>
+  </div>
+
   <div id="adminPanel" class="hidden">
-    <p><strong>Question actuelle :</strong> <span id="questionDisplay">En attente...</span></p>
+    <h2>Panel Admin</h2>
     <input type="text" id="questionInput" placeholder="Nouvelle question" autocomplete="off" />
-    <br />
-    <button id="btnLancer" disabled>Lancer le chrono (30s)</button>
-    <div id="countdown">--</div>
+    <button id="btnLancer">Lancer le chrono</button>
+    <div id="questionDisplay">En attente...</div>
+    <div id="countdownAdmin">--</div>
     <h3>Réponses des joueurs :</h3>
-    <div id="responseList">En attente des réponses...</div>
+    <div id="responseList"></div>
   </div>
 
-  <!-- Panel joueur -->
-  <div id="joueurPanel" class="hidden">
-    <p><strong>Question :</strong> <span id="joueurQuestion">En attente...</span></p>
+  <div id="playerPanel" class="hidden">
+    <h2>Question</h2>
+    <div id="joueurQuestion">En attente...</div>
+    <div id="countdownJoueur">--</div>
     <input type="text" id="reponseInput" placeholder="Ta réponse" autocomplete="off" />
-    <br />
     <button id="btnEnvoyerReponse">Envoyer</button>
-    <div id="countdown">--</div>
   </div>
 
-  <!-- Firebase SDK -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, push, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, push, remove, update } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-database.js";
 
-    // Config Firebase - remplace par la tienne
+    // Config Firebase - remplace par la tienne si besoin
     const firebaseConfig = {
       apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
       authDomain: "roidestocards-d0084.firebaseapp.com",
-      databaseURL: "https://roidestocards-d0084-default-rtdb.firebaseio.com",
       projectId: "roidestocards-d0084",
       storageBucket: "roidestocards-d0084.appspot.com",
       messagingSenderId: "120053524190",
@@ -113,47 +126,56 @@
       measurementId: "G-YVH6BWKZGZ"
     };
 
-    // Init Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Constantes & éléments DOM
-    const PASSWORD = "tocard";
-
-    const pseudoScreen = document.getElementById("pseudoScreen");
-    const roleScreen = document.getElementById("roleScreen");
-    const lobbyScreen = document.getElementById("lobbyScreen");
-    const adminPanel = document.getElementById("adminPanel");
-    const joueurPanel = document.getElementById("joueurPanel");
-
+    // DOM Elements
+    const stepPseudo = document.getElementById("stepPseudo");
     const pseudoInput = document.getElementById("pseudoInput");
     const btnPseudo = document.getElementById("btnPseudo");
 
+    const stepRole = document.getElementById("stepRole");
     const roleSelect = document.getElementById("roleSelect");
     const adminPassword = document.getElementById("adminPassword");
-    const btnRole = document.getElementById("btnRole");
+    const btnValiderRole = document.getElementById("btnValiderRole");
 
+    const lobby = document.getElementById("lobby");
     const lobbyList = document.getElementById("lobbyList");
 
-    const questionDisplay = document.getElementById("questionDisplay");
+    const adminPanel = document.getElementById("adminPanel");
     const questionInput = document.getElementById("questionInput");
     const btnLancer = document.getElementById("btnLancer");
-    const countdownAdmin = document.querySelector("#adminPanel #countdown");
+    const questionDisplay = document.getElementById("questionDisplay");
+    const countdownAdmin = document.getElementById("countdownAdmin");
+    const responseList = document.getElementById("responseList");
 
+    const playerPanel = document.getElementById("playerPanel");
     const joueurQuestion = document.getElementById("joueurQuestion");
+    const countdownJoueur = document.getElementById("countdownJoueur");
     const reponseInput = document.getElementById("reponseInput");
     const btnEnvoyerReponse = document.getElementById("btnEnvoyerReponse");
-    const countdownJoueur = document.querySelector("#joueurPanel #countdown");
 
     // Variables
-    let playerData = { pseudo: null, role: null };
     let playerId = null;
+    let playerData = null;
     let isAdmin = false;
     let timerInterval = null;
 
-    // 1. Afficher le mot de passe admin seulement si rôle admin sélectionné
+    // Étape 1 : Choisir pseudo
+    btnPseudo.onclick = () => {
+      const pseudo = pseudoInput.value.trim();
+      if(!pseudo) {
+        alert("Entre un pseudo");
+        return;
+      }
+      playerData = { pseudo };
+      stepPseudo.classList.add("hidden");
+      stepRole.classList.remove("hidden");
+    };
+
+    // Afficher / cacher champ mot de passe admin selon rôle
     roleSelect.addEventListener("change", () => {
-      if (roleSelect.value === "admin") {
+      if(roleSelect.value === "admin") {
         adminPassword.classList.remove("hidden");
       } else {
         adminPassword.classList.add("hidden");
@@ -161,104 +183,78 @@
       }
     });
 
-    // 2. Validation pseudo
-    btnPseudo.addEventListener("click", () => {
-      const pseudo = pseudoInput.value.trim();
-      if (!pseudo) {
-        alert("Entre un pseudo !");
-        return;
-      }
-      playerData.pseudo = pseudo;
-      pseudoScreen.classList.add("hidden");
-      roleScreen.classList.remove("hidden");
-    });
-
-    // 3. Validation rôle
-    btnRole.addEventListener("click", async () => {
+    // Étape 2 : Valider rôle + mot de passe admin si besoin + inscrire dans Firebase
+    btnValiderRole.onclick = () => {
       const role = roleSelect.value;
-      if (!role) {
-        alert("Choisis un rôle !");
+      const pwd = adminPassword.value;
+      if(!role) {
+        alert("Choisis un rôle");
         return;
       }
-      if (role === "admin") {
-        if (adminPassword.value !== PASSWORD) {
-          alert("Mot de passe admin incorrect !");
+      if(role === "admin") {
+        if(pwd !== "tocard") {
+          alert("Mot de passe admin incorrect");
           return;
         }
         isAdmin = true;
       } else {
         isAdmin = false;
       }
-
       playerData.role = role;
 
-      // Ajouter joueur dans Firebase
+      // Ajouter joueur dans DB et récupérer clé générée
       const playersRef = ref(db, "players");
       playerId = push(playersRef).key;
       const playerRef = ref(db, `players/${playerId}`);
+      set(playerRef, { pseudo: playerData.pseudo, role: playerData.role });
 
-      await set(playerRef, {
-        pseudo: playerData.pseudo,
-        role: playerData.role,
-        connected: true,
-      });
+      stepRole.classList.add("hidden");
+      lobby.classList.remove("hidden");
 
-      onDisconnect(playerRef).remove();
-
-      roleScreen.classList.add("hidden");
-      lobbyScreen.classList.remove("hidden");
-
-      if (isAdmin) {
+      if(isAdmin) {
         adminPanel.classList.remove("hidden");
-        joueurPanel.classList.add("hidden");
+        playerPanel.classList.add("hidden");
       } else {
+        playerPanel.classList.remove("hidden");
         adminPanel.classList.add("hidden");
-        joueurPanel.classList.remove("hidden");
       }
 
-      setupLobby();
+      startLobbyListener();
       listenQuiz();
-    });
+    };
 
-    // 4. Setup lobby : afficher joueurs en temps réel
-    function setupLobby() {
+    // Écoute en direct les joueurs connectés pour afficher lobby
+    function startLobbyListener(){
       const playersRef = ref(db, "players");
       onValue(playersRef, (snapshot) => {
         const players = snapshot.val() || {};
         lobbyList.innerHTML = "";
-        let countJoueurs = 0;
-
-        for (const id in players) {
+        for(const id in players){
           const p = players[id];
-          const div = document.createElement("div");
-          div.textContent = p.pseudo + (p.role === "admin" ? " (Admin)" : "");
-          lobbyList.appendChild(div);
-          if (p.role === "joueur") countJoueurs++;
+          const span = document.createElement("div");
+          span.textContent = p.pseudo + (p.role === "admin" ? " (Admin)" : "");
+          if(id === playerId) span.style.fontWeight = "bold";
+          lobbyList.appendChild(span);
         }
-
-        // L’admin peut lancer la partie seulement s’il y a au moins un joueur
-        btnLancer.disabled = !isAdmin || countJoueurs === 0;
       });
     }
 
-    // 5. Admin lance la question + chrono
-    btnLancer.addEventListener("click", () => {
+    // Admin lance la question + chrono
+    btnLancer.onclick = () => {
       const question = questionInput.value.trim();
-      if (!question) {
+      if(!question) {
         alert("Écris une question !");
         return;
       }
-
-      // Sauvegarder question dans DB
+      // Mettre question + chrono dans DB
       const quizRef = ref(db, "quiz");
       set(quizRef, {
         question: question,
         chrono: 30,
         active: true,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       });
 
-      // Reset input + bouton
       questionInput.value = "";
       btnLancer.disabled = true;
 
@@ -266,44 +262,41 @@
       const reponsesRef = ref(db, "reponses");
       set(reponsesRef, {});
 
-      // Lancer le chrono localement côté admin
       startCountdown(30, countdownAdmin);
-    });
+    };
 
-    // 6. Gestion du chrono côté admin
-    function startCountdown(seconds, displayElement) {
+    // Fonction chrono (admin + maj Firebase)
+    function startCountdown(seconds, displayElement){
       clearInterval(timerInterval);
       let timeLeft = seconds;
       displayElement.textContent = timeLeft + "s";
 
       timerInterval = setInterval(() => {
         timeLeft--;
-        if (timeLeft <= 0) {
+        if(timeLeft <= 0){
           clearInterval(timerInterval);
           displayElement.textContent = "Temps écoulé";
-          // Fin de la question, désactiver bouton lancer question
           btnLancer.disabled = false;
 
-          // Mettre quiz.active = false dans Firebase
-          const quizRef = ref(db, "quiz/active");
-          set(quizRef, false);
+          // Fin quiz
+          const quizActiveRef = ref(db, "quiz/active");
+          set(quizActiveRef, false);
           return;
         }
         displayElement.textContent = timeLeft + "s";
 
-        // Mettre à jour le chrono en DB pour que les joueurs voient le décompte
+        // Mise à jour chrono dans DB
         const chronoRef = ref(db, "quiz/chrono");
         set(chronoRef, timeLeft);
       }, 1000);
     }
 
-    // 7. Écouter question + chrono dans DB, mise à jour côté joueur
-    function listenQuiz() {
+    // Écoute question + chrono pour tous
+    function listenQuiz(){
       const quizRef = ref(db, "quiz");
       onValue(quizRef, (snapshot) => {
         const quiz = snapshot.val();
-        if (!quiz || !quiz.active) {
-          // Pas de question active
+        if(!quiz || !quiz.active){
           questionDisplay.textContent = "En attente...";
           joueurQuestion.textContent = "En attente...";
           countdownAdmin.textContent = "--";
@@ -315,14 +308,12 @@
           btnEnvoyerReponse.classList.add("hidden");
           return;
         }
-
         questionDisplay.textContent = quiz.question;
         joueurQuestion.textContent = quiz.question;
 
-        if (!isAdmin) {
-          // Joueur voit le chrono et peut répondre si chrono > 0
+        if(!isAdmin){
           countdownJoueur.textContent = quiz.chrono + "s";
-          if (quiz.chrono > 0) {
+          if(quiz.chrono > 0){
             btnEnvoyerReponse.disabled = false;
             reponseInput.disabled = false;
             reponseInput.classList.remove("hidden");
@@ -333,56 +324,56 @@
             reponseInput.classList.add("hidden");
             btnEnvoyerReponse.classList.add("hidden");
           }
+        } else {
+          countdownAdmin.textContent = quiz.chrono + "s";
         }
       });
+
+      // Écoute réponses en direct (admin uniquement)
+      if(isAdmin){
+        const reponsesRef = ref(db, "reponses");
+        onValue(reponsesRef, (snapshot) => {
+          const reponses = snapshot.val() || {};
+          responseList.innerHTML = "";
+          Object.values(reponses).forEach(r => {
+            const p = document.createElement("p");
+            p.textContent = `${r.pseudo} : ${r.reponse}`;
+            responseList.appendChild(p);
+          });
+        });
+      }
     }
 
-    // 8. Envoi de la réponse joueur
-    btnEnvoyerReponse.addEventListener("click", async () => {
-      const reponse = reponseInput.value.trim();
-      if (!reponse) {
-        alert("Écris ta réponse !");
+    // Envoyer réponse joueur
+    btnEnvoyerReponse.onclick = () => {
+      const answer = reponseInput.value.trim();
+      if(!answer){
+        alert("Écris une réponse !");
         return;
       }
-
       const reponsesRef = ref(db, "reponses");
-      const newReponseRef = push(reponsesRef);
-      await set(newReponseRef, {
+      // Empêche double réponse : on remplace ou on ajoute
+      const userResponseRef = ref(db, `reponses/${playerId}`);
+      set(userResponseRef, {
         pseudo: playerData.pseudo,
-        reponse: reponse,
-        timestamp: Date.now(),
+        reponse: answer,
+        timestamp: Date.now()
       });
-
-      // Désactiver le champ et bouton après envoi
+      alert("Réponse envoyée !");
       reponseInput.value = "";
-      reponseInput.disabled = true;
       btnEnvoyerReponse.disabled = true;
-      reponseInput.classList.add("hidden");
-      btnEnvoyerReponse.classList.add("hidden");
-    });
+      reponseInput.disabled = true;
+    };
 
-    // 9. Admin écoute les réponses en direct
-    if (isAdmin) {
-      const reponsesRef = ref(db, "reponses");
-      onValue(reponsesRef, (snapshot) => {
-        const réponses = snapshot.val() || {};
-        responseList.innerHTML = "";
-        for (const key in réponses) {
-          const r = réponses[key];
-          const div = document.createElement("div");
-          div.textContent = `${r.pseudo} : ${r.reponse}`;
-          responseList.appendChild(div);
-        }
-      });
-    }
-
-    // 10. Quand la page se ferme, retirer le joueur de la DB
+    // Supprimer joueur dans Firebase à la déconnexion
     window.addEventListener("beforeunload", () => {
-      if (playerId) {
+      if(playerId){
         remove(ref(db, `players/${playerId}`));
+        remove(ref(db, `reponses/${playerId}`));
       }
     });
 
   </script>
+
 </body>
 </html>
