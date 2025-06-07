@@ -1,17 +1,12 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
+import { getDatabase, ref, set, onValue, push, remove } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
   authDomain: "roidestocards-d0084.firebaseapp.com",
+  databaseURL: "https://roidestocards-d0084.firebaseio.com",
   projectId: "roidestocards-d0084",
-  storageBucket: "roidestocards-d0084.firebasestorage.app",
+  storageBucket: "roidestocards-d0084.appspot.com",
   messagingSenderId: "120053524190",
   appId: "1:120053524190:web:c68520412faff06836044f",
   measurementId: "G-YVH6BWKZGZ"
@@ -19,10 +14,7 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+const database = getDatabase(app);
 
 // Variables globales
 let playerId = null;
