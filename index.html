@@ -4,38 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Test Firebase</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #eee;
-      text-align: center;
-      padding: 1rem;
-      max-width: 600px;
-      margin: auto;
-    }
-    button {
-      cursor: pointer;
-      background: gold;
-      color: #111;
-      font-weight: bold;
-      transition: background 0.3s ease;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 4px;
-      font-size: 1rem;
-      margin: 0.5rem;
-    }
-    button:hover {
-      background: orange;
-    }
-    #dataOutput {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: #222;
-      border-radius: 4px;
-    }
-  </style>
 </head>
 <body>
   <h1>Test Firebase</h1>
@@ -47,22 +15,20 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
-    // Configuration Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
       authDomain: "roidestocards-d0084.firebaseapp.com",
-      databaseURL: "https://roidestocards-d0084-default-rtdb.europe-west1.firebasedatabase.app/",
+      databaseURL: "https://roidestocards-d0084.firebaseio.com",
       projectId: "roidestocards-d0084",
       storageBucket: "roidestocards-d0084.appspot.com",
       messagingSenderId: "120053524190",
-      appId: "1:120053524190:web:c68520412faff06836044f"
+      appId: "1:120053524190:web:c68520412faff06836044f",
+      measurementId: "G-YVH6BWKZGZ"
     };
 
-    // Initialiser Firebase
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    // Écrire des données dans Firebase
     document.getElementById('writeData').addEventListener('click', () => {
       const testDataRef = ref(database, 'test/data');
       set(testDataRef, {
@@ -77,7 +43,6 @@
       });
     });
 
-    // Lire des données depuis Firebase
     document.getElementById('readData').addEventListener('click', () => {
       const testDataRef = ref(database, 'test/data');
       onValue(testDataRef, (snapshot) => {
