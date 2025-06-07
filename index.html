@@ -3,97 +3,102 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quiz en Temps Réel</title>
+  <title>Lobby RoidestoCards</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #111;
-      color: #eee;
-      text-align: center;
       padding: 1rem;
-      max-width: 600px;
-      margin: auto;
-    }
-    input, select, button {
-      font-size: 1.2rem;
-      padding: 0.5rem;
-      margin: 0.5rem 0;
-      width: 80%;
-      max-width: 300px;
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
-      border-radius: 4px;
-      border: none;
-    }
-    button {
-      cursor: pointer;
-      background: gold;
-      color: #111;
-      font-weight: bold;
-      transition: background 0.3s ease;
-    }
-    button:hover {
-      background: orange;
+      background: #f5f5f5;
     }
     .hidden {
-      display: none !important;
+      display: none;
     }
-    #lobbyListAdmin, #lobbyListPlayers {
-      text-align: left;
-      max-height: 150px;
-      overflow-y: auto;
-      background: #222;
-      padding: 0.5rem;
-      margin: 1rem auto;
-      border-radius: 6px;
-      width: 90%;
-      max-width: 400px;
+    #lobby {
+      margin-top: 1rem;
     }
-    .section-lobby {
+    #adminList > div {
+      color: darkred;
+      font-weight: normal;
+      margin-bottom: 0.3rem;
+    }
+    #playerList > div {
+      margin-bottom: 0.3rem;
+    }
+    #adminList > div[style*="font-weight: bold"] {
+      font-weight: bold;
+    }
+    #playerList > div[style*="font-weight: bold"] {
+      font-weight: bold;
+    }
+    #messageBox {
+      color: red;
+      font-weight: bold;
       margin-bottom: 1rem;
     }
-    .bold {
-      font-weight: bold;
+    label {
+      display: block;
+      margin-top: 1rem;
+      margin-bottom: 0.3rem;
+    }
+    input, select, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      width: 100%;
+      max-width: 300px;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 1rem;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 3px;
+    }
+    button:hover {
+      background-color: #0056b3;
     }
   </style>
 </head>
 <body>
+  <h1>Bienvenue sur RoidestoCards</h1>
 
-  <div id="stepPseudo">
-    <h2>Choisis ton pseudo</h2>
-    <input type="text" id="pseudoInput" placeholder="Ton pseudo" autocomplete="off" />
-    <button id="btnPseudo">Valider pseudo</button>
-  </div>
+  <section id="stepPseudo">
+    <label for="pseudoInput">Entre ton pseudo :</label>
+    <input type="text" id="pseudoInput" autocomplete="off" />
+    <button id="btnPseudo">Valider le pseudo</button>
+  </section>
 
-  <div id="stepRole" class="hidden">
-    <h2>Choisis ton rôle</h2>
+  <section id="stepRole" class="hidden">
+    <label for="roleSelect">Choisis un rôle :</label>
     <select id="roleSelect">
       <option value="">-- Choisir --</option>
-      <option value="admin">Admin</option>
-      <option value="joueur">Joueur</option>
+      <option value="player">Joueur</option>
+      <option value="admin">Administrateur</option>
     </select>
-    <input type="password" id="adminPassword" placeholder="Mot de passe admin" class="hidden" autocomplete="off" />
-    <button id="btnValiderRole">Valider rôle</button>
-  </div>
 
-  <div id="lobby" class="hidden">
-    <h2>Lobby - Joueurs connectés</h2>
+    <div id="adminPassword" class="hidden">
+      <label for="adminPasswordInput">Mot de passe admin :</label>
+      <input type="password" id="adminPassword" autocomplete="off" />
+    </div>
 
-    <div class="section-lobby">
+    <button id="btnValiderRole">Valider le rôle</button>
+  </section>
+
+  <div id="messageBox"></div>
+
+  <section id="lobby" class="hidden">
+    <h2>Lobby</h2>
+    <div>
       <h3>Administrateur</h3>
-      <div id="lobbyListAdmin"></div>
+      <div id="adminList"></div>
     </div>
-
-    <div class="section-lobby">
+    <div>
       <h3>Joueurs</h3>
-      <div id="lobbyListPlayers"></div>
+      <div id="playerList"></div>
     </div>
-    <div id="messageBox" style="color: red; font-weight: bold; margin: 1rem 0; display: none;"></div>
-
-  </div>
+  </section>
 
   <script type="module" src="app.js"></script>
-
 </body>
 </html>
