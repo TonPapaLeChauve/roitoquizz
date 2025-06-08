@@ -83,6 +83,8 @@
     <button id="btnValiderRole">Valider rôle</button>
   </div>
 
+  <!-- ...garde tout comme avant -->
+  
   <!-- Lobby -->
   <div id="lobby" class="hidden">
     <h2>Lobby</h2>
@@ -90,12 +92,32 @@
     <div id="adminList"></div>
     <h3>🎮 Joueurs</h3>
     <div id="playerList"></div>
-
+  
     <!-- Contrôles admin -->
     <div id="adminControls" class="hidden">
       <button id="launchQuestion">Lancer la question suivante</button>
     </div>
+  
+    <!-- Zone réponses admin -->
+    <div id="adminAnswers" class="hidden" style="margin-top: 20px; text-align: left; background:#222; padding: 10px; border-radius:6px; max-height: 200px; overflow-y: auto;">
+      <h3>Réponses des joueurs</h3>
+      <div id="answersList"></div>
+    </div>
   </div>
+  
+  <!-- Affichage question + chrono -->
+  <div id="questionContainer" class="hidden">
+    <h2 id="questionText"></h2>
+    <img id="questionImage" src="#" alt="Image question" />
+    <div id="timer"></div>
+  
+    <!-- Réponse joueur -->
+    <div id="playerAnswerContainer" class="hidden" style="margin-top: 1rem;">
+      <input type="text" id="playerAnswerInput" placeholder="Tape ta réponse ici" autocomplete="off" style="width:80%; font-size:1.1rem; padding:0.4rem;"/>
+      <button id="btnSendAnswer" style="margin-left: 0.5rem;">Envoyer</button>
+    </div>
+  </div>
+
 
   <!-- Affichage question + chrono -->
   <div id="questionContainer" class="hidden">
