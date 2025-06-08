@@ -18,6 +18,10 @@ const config = {
 const app = initializeApp(config);
 const db = getDatabase(app);
 
+const correctAnswerZone = e("correctAnswer");
+const correctText = e("correctText");
+
+
 let playerId = null;
 let playerData = { pseudo: "", role: "" };
 let currentQuestionIndex = 0;
