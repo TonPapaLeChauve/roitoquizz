@@ -1,8 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-import {
-  getDatabase, ref, set, onValue, push, onDisconnect,
-  update, remove, get
-} from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+import { getDatabase, ref, set, onValue, push, onDisconnect, update, remove, get, child } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
@@ -21,8 +18,9 @@ let playerId = null;
 let playerData = { pseudo: null, role: null };
 let currentQuestionIndex = 0;
 let questionTimer = null;
+const QUESTION_DURATION = 30;
 
-// DOM
+// UI Elements
 const stepPseudo = document.getElementById("stepPseudo");
 const pseudoInput = document.getElementById("pseudoInput");
 const btnPseudo = document.getElementById("btnPseudo");
@@ -35,176 +33,155 @@ const btnValiderRole = document.getElementById("btnValiderRole");
 const lobby = document.getElementById("lobby");
 const adminList = document.getElementById("adminList");
 const playerList = document.getElementById("playerList");
-const questionSection = document.getElementById("questionSection");
+
+const adminControls = document.getElementById("adminControls");
+const btnNextQuestion = document.getElementById("btnNextQuestion");
+const questionZone = document.getElementById("questionZone");
 const questionText = document.getElementById("questionText");
 const questionImage = document.getElementById("questionImage");
-const startQuestionBtn = document.getElementById("startQuestionBtn");
-const timerDisplay = document.getElementById("timer");
-const answersDisplay = document.getElementById("answers");
+const timeLeft = document.getElementById("timeLeft");
 
-const answerInput = document.getElementById("answerInput");
-const btnAnswer = document.getElementById("btnAnswer");
+// Load questions
+let questions = [];
+fetch("https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/questions.json")
+  .then(res => res.json())
+  .then(data => questions = data)
+  .catch(err => console.error("Erreur de chargement des questions:", err));
 
+// Étape 1 : pseudo
 btnPseudo.onclick = () => {
   const pseudo = pseudoInput.value.trim();
-  if (!pseudo) return alert("Entre un pseudo");
+  if (!pseudo) {
+    alert("Entre un pseudo");
+    return;
+  }
   playerData.pseudo = pseudo;
   stepPseudo.classList.add("hidden");
   stepRole.classList.remove("hidden");
 };
 
-roleSelect.onchange = () => {
+// Affichage du champ mot de passe si admin
+roleSelect.addEventListener("change", () => {
   if (roleSelect.value === "admin") {
     adminPassword.classList.remove("hidden");
   } else {
     adminPassword.classList.add("hidden");
-    adminPassword.value = "";
   }
-};
+});
 
+// Étape 2 : rôle
 btnValiderRole.onclick = async () => {
   const role = roleSelect.value;
-  if (!role) return alert("Choisis un rôle");
+  const pwd = adminPassword.value;
+
+  if (!role) {
+    alert("Choisis un rôle");
+    return;
+  }
 
   if (role === "admin") {
-    const pwd = adminPassword.value;
-    if (pwd !== "tocard") return alert("Mot de passe admin incorrect");
-
     const snapshot = await get(ref(db, "players"));
     const players = snapshot.val();
-    for (const id in players) {
-      if (players[id].role === "admin" && players[id].online) {
-        return alert("Un admin est déjà connecté.");
-      }
+    const alreadyAdmin = players && Object.values(players).some(p => p.role === "admin" && p.online);
+    if (alreadyAdmin) {
+      alert("Un admin est déjà en ligne.");
+      return;
+    }
+    if (pwd !== "tocard") {
+      alert("Mot de passe incorrect");
+      return;
     }
   }
 
-  playerId = push(ref(db, "players")).key;
-
-  const existingPlayers = (await get(ref(db, "players"))).val();
-  for (const id in existingPlayers) {
-    if (existingPlayers[id].pseudo === playerData.pseudo && !existingPlayers[id].online) {
+  // Pseudo unique
+  const snapshot = await get(ref(db, "players"));
+  const players = snapshot.val();
+  for (const id in players) {
+    if (players[id].pseudo === playerData.pseudo) {
       playerId = id;
       break;
     }
   }
 
-  playerData.role = role;
+  if (!playerId) {
+    playerId = push(ref(db, "players")).key;
+  }
 
+  playerData.role = role;
   const playerRef = ref(db, `players/${playerId}`);
-  set(playerRef, {
+  const playerObject = {
     pseudo: playerData.pseudo,
     role: playerData.role,
     online: true,
-    points: existingPlayers?.[playerId]?.points || 0,
-    reponse: ""
-  });
+    points: players?.[playerId]?.points || 0
+  };
 
+  set(playerRef, playerObject);
   onDisconnect(playerRef).update({ online: false });
 
   stepRole.classList.add("hidden");
   lobby.classList.remove("hidden");
 
-  setupLobby();
-  if (role === "admin") setupAdminControls();
-  else setupPlayerControls();
+  if (role === "admin") adminControls.classList.remove("hidden");
+
+  startLobbyListener();
 };
 
-function setupLobby() {
+// 🎯 Listener Lobby
+function startLobbyListener() {
   onValue(ref(db, "players"), (snapshot) => {
     const players = snapshot.val() || {};
-    const isAdminOnline = Object.values(players).some(p => p.role === "admin" && p.online);
-
-    if (!isAdminOnline && playerData.role !== "admin") {
-      alert("La partie a été annulée, l'admin s'est déconnecté.");
-      location.reload();
-    }
+    let adminStillConnected = false;
 
     adminList.innerHTML = "";
     playerList.innerHTML = "";
+
     for (const id in players) {
       const p = players[id];
-      if (!p || !p.pseudo) continue;
+      if (!p) continue;
 
       const div = document.createElement("div");
-      div.textContent = `${p.role === "admin" ? "👑" : "🎮"} ${p.pseudo} - ${p.points} pts` +
-        (p.online === false ? " [hors ligne]" : "");
-      if (id === playerId) div.style.fontWeight = "bold";
-
-      if (p.role === "admin") adminList.appendChild(div);
-      else playerList.appendChild(div);
-    }
-
-    if (playerData.role === "admin") {
-      answersDisplay.innerHTML = "";
-      for (const id in players) {
-        const p = players[id];
-        if (p.role === "joueur") {
-          const row = document.createElement("div");
-          row.textContent = `${p.pseudo} : ${p.reponse || "..."}`;
-          const btn = document.createElement("button");
-          btn.textContent = "+1";
-          btn.onclick = () => {
-            update(ref(db, `players/${id}`), {
-              points: (p.points || 0) + 1
-            });
-          };
-          row.appendChild(btn);
-          answersDisplay.appendChild(row);
-        }
+      div.className = p.role;
+      div.innerHTML = `<span class="emoji"></span><strong>${p.pseudo}</strong> <span class="points">${p.points ?? 0} pts</span>${p.online === false ? " [hors ligne]" : ""}`;
+      if (p.role === "admin") {
+        adminList.appendChild(div);
+        if (p.online) adminStillConnected = true;
+      } else {
+        playerList.appendChild(div);
       }
     }
-  });
-}
 
-function setupAdminControls() {
-  questionSection.classList.remove("hidden");
-  startQuestionBtn.onclick = () => {
-    fetch("https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/questions.json")
-      .then(res => res.json())
-      .then(data => {
-        const question = data[currentQuestionIndex];
-        if (!question) return alert("Plus de questions.");
-        set(ref(db, "question"), {
-          enCours: true,
-          question: question.text,
-          image: question.image,
-          startTime: Date.now()
-        });
-
-        setTimeout(() => {
-          set(ref(db, "question/enCours"), false);
-          currentQuestionIndex++;
-        }, 30000);
+    if (playerData.role !== "admin" && !adminStillConnected) {
+      alert("L'admin s'est déconnecté. La partie est annulée.");
+      get(ref(db, "players")).then(() => {
+        remove(ref(db, "players")).then(() => location.reload());
       });
-}
-
-function setupPlayerControls() {
-  onValue(ref(db, "question"), (snapshot) => {
-    const q = snapshot.val();
-    if (q?.enCours) {
-      questionText.textContent = q.question;
-      questionImage.src = q.image;
-      questionSection.classList.remove("hidden");
-
-      const interval = setInterval(() => {
-        const now = Date.now();
-        const diff = Math.max(0, 30 - Math.floor((now - q.startTime) / 1000));
-        timerDisplay.textContent = `Temps restant : ${diff}s`;
-        if (diff <= 0) {
-          clearInterval(interval);
-          questionSection.classList.add("hidden");
-          answerInput.value = "";
-        }
-      }, 1000);
-    } else {
-      questionSection.classList.add("hidden");
     }
   });
-
-  btnAnswer.onclick = () => {
-    const answer = answerInput.value.trim();
-    if (answer)
-      update(ref(db, `players/${playerId}`), { reponse: answer });
-  };
 }
+
+// 🎬 Admin : prochaine question
+btnNextQuestion.onclick = () => {
+  if (currentQuestionIndex >= questions.length) {
+    alert("Toutes les questions ont été posées.");
+    return;
+  }
+
+  const q = questions[currentQuestionIndex];
+  questionText.textContent = q.question;
+  questionImage.src = q.image;
+  questionZone.classList.remove("hidden");
+
+  let remaining = QUESTION_DURATION;
+  timeLeft.textContent = remaining;
+  clearInterval(questionTimer);
+  questionTimer = setInterval(() => {
+    remaining--;
+    timeLeft.textContent = remaining;
+    if (remaining <= 0) {
+      clearInterval(questionTimer);
+      questionZone.classList.add("hidden");
+      currentQuestionIndex++;
+    }
+  }, 1000);
+};
