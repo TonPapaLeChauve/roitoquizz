@@ -4,13 +4,13 @@ import {
   onDisconnect, update, remove, get
 } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
-// Config Firebase
+// Firebase config
 const config = {
   apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
   authDomain: "roidestocards-d0084.firebaseapp.com",
   databaseURL: "https://roidestocards-d0084-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "roidestocards-d0084",
-  storageBucket: "roidestocards-d0084.firebasestorage.app",
+  storageBucket: "roidestocards-d0084.firebaseapp.com",
   messagingSenderId: "120053524190",
   appId: "1:120053524190:web:c68520412faff06836044f",
   measurementId: "G-YVH6BWKZGZ"
@@ -25,11 +25,13 @@ let timerInterval = null;
 const QUESTION_DURATION = 30;
 let questions = [];
 
-// Chargement des questions depuis GitHub
-fetch("https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/questions.json")
-  .then(r => r.json()).then(data => questions = data);
+// Chargement questions sécurisé
+async function loadQuestions() {
+  const r = await fetch("https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/questions.json");
+  questions = await r.json();
+}
 
-// ----- DOM helper
+// DOM helper
 const e = id => document.getElementById(id);
 const stepPseudo = e("stepPseudo"), pseudoInput = e("pseudoInput"), btnPseudo = e("btnPseudo");
 const stepRole = e("stepRole"), roleSelect = e("roleSelect"), adminPassword = e("adminPassword"), btnValiderRole = e("btnValiderRole");
@@ -40,7 +42,6 @@ const playerAnswerZone = e("playerAnswerZone"), answerInput = e("answerInput"), 
 const adminAnswers = e("adminAnswers"), finalAnswers = e("finalAnswers");
 
 // Étapes de connexion
-
 btnPseudo.onclick = () => {
   const pseudo = pseudoInput.value.trim();
   if (!pseudo) return alert("Entre un pseudo");
@@ -66,7 +67,6 @@ btnValiderRole.onclick = async () => {
     if (pwd !== "tocard") return alert("Mot de passe incorrect");
   }
 
-  // réutilisation d'un pseudo offline
   for (const id in players) {
     if (players[id].pseudo === playerData.pseudo && !players[id].online) {
       playerId = id;
@@ -95,8 +95,7 @@ btnValiderRole.onclick = async () => {
   if (role === "admin") listenQuestion();
 };
 
-// Lobby & points
-
+// Lobby
 function listenLobby() {
   onValue(ref(db, "players"), snap => {
     const players = snap.val() || {};
@@ -144,8 +143,7 @@ function listenLobby() {
   });
 }
 
-// Questions + chrono
-
+// Déclenche une nouvelle question
 btnNextQuestion.onclick = () => {
   if (currentQuestionIndex >= questions.length) return alert("Fin des questions");
 
@@ -162,7 +160,6 @@ btnNextQuestion.onclick = () => {
   clearTimeout(timerInterval);
   lookupEnd(now + QUESTION_DURATION * 1000);
 
-  // Supprimer les réponses des joueurs
   get(ref(db, "players")).then(snap => {
     const pls = snap.val() || {};
     for (const id in pls) {
@@ -184,7 +181,7 @@ function lookupEnd(when) {
   timerInterval = setTimeout(endQuestion, delay);
 }
 
-// Affichage question côté joueur/admin
+// Écoute question en cours
 function listenQuestion() {
   onValue(ref(db, "currentQuestion"), snap => {
     const q = snap.val();
@@ -198,7 +195,6 @@ function listenQuestion() {
     }
 
     if (q.finished) {
-      // Fin de question : afficher réponses finales, masquer saisie
       questionZone.classList.add("hidden");
       playerAnswerZone.classList.add("hidden");
       adminAnswers.classList.add("hidden");
@@ -209,14 +205,11 @@ function listenQuestion() {
       return;
     }
 
-    // Question en cours
     questionZone.classList.remove("hidden");
     questionText.textContent = q.text;
     questionImage.src = q.image;
-
     finalAnswers.classList.add("hidden");
 
-    // Chrono
     const end = q.start + QUESTION_DURATION * 1000;
     clearInterval(timerInterval);
     timerInterval = setInterval(() => {
@@ -233,14 +226,14 @@ function listenQuestion() {
   });
 }
 
-// Joueur envoie sa réponse
+// Réponse joueur
 btnAnswer.onclick = () => {
   const ans = answerInput.value.trim();
   if (ans)
     update(ref(db, `players/${playerId}`), { answer: ans });
 };
 
-// Admin lit les réponses en direct
+// Admin : réponses en direct
 function loadAdminAnswers() {
   onValue(ref(db, "players"), snap => {
     const pls = snap.val() || {};
@@ -260,21 +253,26 @@ function loadAdminAnswers() {
   });
 }
 
+// Affichage final après chrono
 function loadFinalAnswers() {
   get(ref(db, "players")).then(snap => {
     const pls = snap.val() || {};
     finalAnswers.innerHTML = "";
 
-    // Affiche la réponse correcte (si disponible)
-    const currentQ = questions[currentQuestionIndex - 1]; // question précédente
+    if (!questions.length || currentQuestionIndex <= 0) return;
+    const currentQ = questions[currentQuestionIndex - 1];
+
     if (currentQ?.reponse) {
       const repDiv = document.createElement("div");
       repDiv.innerHTML = `<strong>✅ Réponse correcte :</strong> ${currentQ.reponse}`;
       repDiv.style.marginBottom = "10px";
+      repDiv.style.padding = "8px";
+      repDiv.style.backgroundColor = "#d4edda";
+      repDiv.style.border = "1px solid #c3e6cb";
+      repDiv.style.borderRadius = "5px";
       finalAnswers.appendChild(repDiv);
     }
 
-    // Réponses des joueurs
     Object.values(pls).forEach(p => {
       if (p.role !== "player") return;
       const div = document.createElement("div");
@@ -284,3 +282,7 @@ function loadFinalAnswers() {
   });
 }
 
+// Démarrer l'app après chargement des questions
+(async function main() {
+  await loadQuestions();
+})();
