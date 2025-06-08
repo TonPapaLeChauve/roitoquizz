@@ -117,7 +117,7 @@ function listenLobby() {
         row.innerHTML += ` - <span class="points">${p.points} pts</span>`;
       }
 
-      if (playerData.role === "admin" && p.role === "player") {
+      if (playerData.role === "admin" && p.role === "player" && id !== playerId) {
         const plus = document.createElement("button");
         plus.textContent = "+";
         plus.className = "small-btn";
