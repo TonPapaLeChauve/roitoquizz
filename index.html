@@ -1,163 +1,153 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Roi des Tocard Quiz</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #121212;
-      color: #f1c40f;
-      text-align: center;
-      padding: 20px;
-    }
-
-    h2, h3 {
-      color: #f1c40f;
-    }
-
-    input, select {
-      padding: 10px;
-      margin: 10px;
-      font-size: 16px;
-    }
-
-    button {
-      padding: 10px 20px;
-      margin: 5px;
-      font-size: 16px;
-      background-color: #f1c40f;
-      color: #121212;
-      border: none;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
-    button.small {
-      padding: 4px 8px;
-      font-size: 12px;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .row {
-      margin: 10px 0;
-    }
-
-    img {
-      max-width: 90%;
-      height: auto;
-      border: 3px solid #f1c40f;
-      margin-top: 10px;
-    }
-
-    .points {
-      margin-left: 10px;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RoiToQuizz</title>
+<style>
+  body {
+    background: #111;
+    color: #ff0;
+    font-family: Arial, sans-serif;
+  }
+  .hidden { display: none; }
+  .container {
+    max-width: 600px;
+    margin: 20px auto;
+    background: #222;
+    padding: 15px;
+    border-radius: 8px;
+  }
+  h1 {
+    text-align: center;
+  }
+  #adminList, #playerList, #adminAnswers, #finalAnswers {
+    margin-top: 15px;
+  }
+  .row {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+  }
+  .points {
+    margin-left: 8px;
+    font-weight: bold;
+  }
+  button {
+    background: #ff0;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    color: #111;
+    border-radius: 4px;
+  }
+  button:hover {
+    background: #ee0;
+  }
+  .admin-point-btn {
+    font-size: 0.7em;
+    padding: 2px 6px;
+    margin-left: 5px;
+  }
+  #questionZone {
+    margin-top: 20px;
+    border-top: 1px solid #ff0;
+    padding-top: 10px;
+  }
+  #questionText {
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-bottom: 5px;
+  }
+  #questionImage {
+    max-width: 100%;
+    max-height: 200px;
+    display: block;
+    margin: 0 auto 10px auto;
+    border-radius: 6px;
+  }
+  #timeLeft {
+    font-size: 1.5em;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  #playerAnswerZone input[type="text"] {
+    width: 80%;
+    padding: 5px;
+    margin-right: 8px;
+    border-radius: 4px;
+    border: 1px solid #ff0;
+    background: #111;
+    color: #ff0;
+    font-weight: bold;
+  }
+  #playerAnswerZone button {
+    padding: 5px 12px;
+  }
+  #adminControls {
+    margin-top: 20px;
+    text-align: center;
+  }
+  #finalAnswers {
+    margin-top: 15px;
+    border-top: 1px solid #ff0;
+    padding-top: 10px;
+  }
+</style>
 </head>
 <body>
 
-  <!-- Étape 1 : pseudo -->
+<div class="container">
+
+  <h1>RoiToQuizz</h1>
+
   <div id="stepPseudo">
-    <h2>Entre ton pseudo</h2>
-    <input id="pseudoInput" placeholder="Ton pseudo" />
-    <button id="btnPseudo">Valider</button>
+    <input id="pseudoInput" type="text" placeholder="Ton pseudo" />
+    <button id="btnPseudo">Valider pseudo</button>
   </div>
 
-  <!-- Étape 2 : rôle -->
   <div id="stepRole" class="hidden">
-    <h2>Choisis ton rôle</h2>
     <select id="roleSelect">
-      <option value="">-- Choisir --</option>
-      <option value="player">Joueur</option>
-      <option value="admin">Admin</option>
+      <option value="">--Choisir un rôle--</option>
+      <option value="player">Joueur 🎮</option>
+      <option value="admin">Administrateur 👑</option>
     </select>
-    <div id="adminPassword" class="hidden">
-      <input type="password" placeholder="Mot de passe admin" />
-    </div>
-    <button id="btnValiderRole">Entrer</button>
+    <input id="adminPassword" type="password" placeholder="Mot de passe admin" class="hidden" />
+    <button id="btnValiderRole">Valider rôle</button>
   </div>
 
-  <!-- Lobby -->
   <div id="lobby" class="hidden">
+
     <h2>Lobby</h2>
+
+    <div><strong>Admin :</strong></div>
     <div id="adminList"></div>
+
+    <div><strong>Joueurs :</strong></div>
     <div id="playerList"></div>
+
     <div id="adminControls" class="hidden">
-      <button id="btnNextQuestion">Lancer question</button>
+      <button id="btnNextQuestion">Lancer la question suivante</button>
     </div>
+
+    <div id="questionZone" class="hidden">
+      <div id="questionText"></div>
+      <img id="questionImage" src="" alt="Image question" />
+      <div id="timeLeft"></div>
+    </div>
+
+    <div id="playerAnswerZone" class="hidden">
+      <input id="answerInput" type="text" placeholder="Écris ta réponse ici..." />
+      <button id="btnAnswer">Envoyer</button>
+    </div>
+
+    <div id="adminAnswers" class="hidden"></div>
+    <div id="finalAnswers" class="hidden"></div>
+
   </div>
+</div>
 
-  <!-- Zone question -->
-  <div id="questionZone" class="hidden">
-    <h2 id="questionText"></h2>
-    <img id="questionImage" src="" alt="" />
-    <div id="timeLeft"></div>
-  </div>
-
-  <!-- Réponse joueur -->
-  <div id="playerAnswerZone" class="hidden">
-    <h3>Ta réponse :</h3>
-    <input id="answerInput" placeholder="Écris ta réponse ici" />
-    <button id="btnAnswer">Envoyer</button>
-  </div>
-
-  <!-- Zone réponses admin -->
-  <div id="adminAnswers" class="hidden">
-    <h3>Réponses des joueurs :</h3>
-  </div>
-
-  <!-- Réponse correcte -->
-  <div id="correctAnswer" class="hidden">
-    <h3>✅ Réponse correcte :</h3>
-    <p id="correctText"></p>
-  </div>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-    import {
-      getDatabase, ref, set, push, onValue,
-      onDisconnect, update, remove, get
-    } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
-
-    const config = {
-      apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
-      authDomain: "roidestocards-d0084.firebaseapp.com",
-      databaseURL: "https://roidestocards-d0084-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "roidestocards-d0084",
-      storageBucket: "roidestocards-d0084.appspot.com",
-      messagingSenderId: "120053524190",
-      appId: "1:120053524190:web:c68520412faff06836044f",
-      measurementId: "G-YVH6BWKZGZ"
-    };
-
-    const app = initializeApp(config);
-    const db = getDatabase(app);
-
-    const e = id => document.getElementById(id);
-
-    const btnPseudo = e("btnPseudo");
-    const pseudoInput = e("pseudoInput");
-    const stepPseudo = e("stepPseudo");
-    const stepRole = e("stepRole");
-
-    btnPseudo.addEventListener("click", () => {
-      const pseudo = pseudoInput.value.trim();
-      if (!pseudo) {
-        alert("Entre un pseudo valide.");
-        return;
-      }
-
-      stepPseudo.classList.add("hidden");
-      stepRole.classList.remove("hidden");
-
-      // Ici tu continues avec ton JS principal (déjà intégré dans main.js normalement)
-    });
-  </script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
