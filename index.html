@@ -2,42 +2,82 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Roi des Tocards</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Roi des ToCards</title>
+  <style>
+    body {
+      background: #111;
+      color: #eee;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 1rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    input, select, button {
+      font-size: 1.2rem; padding: 0.5rem; margin: 0.5rem 0;
+      width: 80%; max-width: 300px;
+      border:none; border-radius:4px;
+    }
+    input, select { background: #222; color: #eee; }
+    button {
+      background: gold; color:#111; font-weight:bold;
+      cursor: pointer; transition: background .3s;
+    }
+    button:hover { background: orange; }
+    .hidden { display: none !important; }
+    #adminList, #playerList {
+      background:#222; padding:.5rem; margin:1rem auto; max-height:150px; overflow-y:auto;
+      text-align:left; border-radius:6px;
+    }
+    #questionZone img { max-width:100%; margin-top:10px; }
+    #timer { font-size:1.5rem; margin-top:10px; color:gold; }
+    .row { display:flex; justify-content:center; align-items:center; margin:5px 0; }
+    .row span { margin: 0 5px; }
+    .validateBtn { margin-left:10px; }
+  </style>
 </head>
 <body>
+
   <div id="stepPseudo">
-    <input id="pseudoInput" type="text" placeholder="Ton pseudo"/>
-    <button id="btnPseudo">Valider</button>
+    <h2>Choisis ton pseudo</h2>
+    <input id="pseudoInput" placeholder="Pseudo" autocomplete="off"/>
+    <button id="btnPseudo">Valider pseudo</button>
   </div>
 
   <div id="stepRole" class="hidden">
+    <h2>Choisis ton rôle</h2>
     <select id="roleSelect">
-      <option value="">-- Choisir un rôle --</option>
-      <option value="player">👾 Joueur</option>
+      <option value="">-- Choisir --</option>
       <option value="admin">👑 Admin</option>
+      <option value="player">🎮 Joueur</option>
     </select>
-    <input id="adminPassword" type="password" class="hidden" placeholder="Mot de passe admin"/>
-    <button id="btnValiderRole">Rejoindre</button>
+    <input type="password" id="adminPassword" class="hidden" placeholder="Mot de passe admin" autocomplete="off"/>
+    <button id="btnValiderRole">Valider rôle</button>
   </div>
 
   <div id="lobby" class="hidden">
-    <h2>👑 Admins</h2>
+    <h3>👑 Administrateur</h3>
     <div id="adminList"></div>
-
-    <h2>🎮 Joueurs</h2>
+    <h3>🎮 Joueurs</h3>
     <div id="playerList"></div>
 
     <div id="adminControls" class="hidden">
-      <button id="btnNextQuestion">➡️ Lancer Question</button>
+      <button id="btnNextQuestion">➡️ Lancer question</button>
+    </div>
+  </div>
+
+  <div id="questionZone" class="hidden">
+    <h3 id="questionText"></h3>
+    <img id="questionImage" src="" alt="Image question"/>
+    <div id="timer">⏱️ Temps restant : <span id="timeLeft">30</span>s</div>
+
+    <div id="playerAnswerZone" class="hidden">
+      <input id="answerInput" placeholder="Ta réponse" autocomplete="off"/>
+      <button id="btnAnswer">Envoyer</button>
     </div>
 
-    <div id="questionZone" class="hidden">
-      <p id="questionText"></p>
-      <img id="questionImage" src="" alt="image question" style="max-width: 100%;"/>
-      <p>⏳ Temps restant : <span id="timeLeft"></span>s</p>
-    </div>
+    <div id="adminAnswers" class="hidden"></div>
   </div>
 
   <script type="module" src="app.js"></script>
