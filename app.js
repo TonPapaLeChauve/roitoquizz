@@ -4,7 +4,6 @@ import {
   onDisconnect, update, remove, get
 } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
-// Remplace par ta config
 const config = {
   apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
   authDomain: "roidestocards-d0084.firebaseapp.com",
@@ -28,7 +27,8 @@ let questionsLoaded = false;
 
 // URL vers ton JSON sur GitHub
 fetch("https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/questions.json")
-  .then(r => r.json()).then(data => {
+  .then(r => r.json())
+  .then(data => {
     questions = data;
     questionsLoaded = true;
   });
@@ -41,6 +41,7 @@ const lobby = e("lobby"), adminList = e("adminList"), playerList = e("playerList
 const adminControls = e("adminControls"), btnNextQuestion = e("btnNextQuestion");
 const questionZone = e("questionZone"), questionText = e("questionText"), questionImage = e("questionImage"), timeLeft = e("timeLeft");
 const playerAnswerZone = e("playerAnswerZone"), answerInput = e("answerInput"), btnAnswer = e("btnAnswer");
+const adminAnswers = e("adminAnswers"), finalAnswers = e("finalAnswers");
 
 // ---- Étapes de connexion ----
 
@@ -114,49 +115,126 @@ function listenLobby() {
 
       const row = document.createElement("div");
       row.className = "row";
-      const emoji = p.role === "admin" ? "👑" : "🎮";
-      row.innerHTML = `${emoji} <strong>${p.pseudo}</strong>`;
 
-      // Points affichés pour tous SAUF admin
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = p.pseudo;
+      row.appendChild(nameSpan);
+
       if (p.role === "player") {
-        row.innerHTML += ` - <span class="points">${p.points} pts</span>`;
-      }
+        const pointsSpan = document.createElement("span");
+        pointsSpan.className = "points";
+        pointsSpan.textContent = p.points || 0;
+        row.appendChild(pointsSpan);
+        playerList.appendChild(row);
+      } else if (p.role === "admin") {
+        adminOnline = true;
 
-      // Boutons + et - que pour l'admin, et seulement pour joueurs
-      if (playerData.role === "admin" && p.role === "player") {
+        // Ajout des boutons + et -
         const plus = document.createElement("button");
         plus.textContent = "+";
-        plus.style.fontSize = "0.8em";
-        plus.onclick = () => update(ref(db, `players/${id}`), { points: p.points + 1 });
+        plus.classList.add("admin-point-btn");
+        plus.onclick = () => updatePoints(id, 1);
+
         const minus = document.createElement("button");
         minus.textContent = "-";
-        minus.style.fontSize = "0.8em";
-        minus.onclick = () => update(ref(db, `players/${id}`), { points: Math.max(0, p.points - 1) });
-        row.append(plus, minus);
-      }
+        minus.classList.add("admin-point-btn");
+        minus.onclick = () => updatePoints(id, -1);
 
-      if (p.role === "admin") {
+        row.appendChild(plus);
+        row.appendChild(minus);
+
+        const pointsSpan = document.createElement("span");
+        pointsSpan.className = "points";
+        pointsSpan.textContent = p.points || 0;
+        row.appendChild(pointsSpan);
+
         adminList.appendChild(row);
-        adminOnline = true;
-      } else {
-        playerList.appendChild(row);
       }
-    }
-
-    if (!adminOnline) {
-      alert("L'administrateur s'est déconnecté. Partie annulée.");
-      remove(ref(db, "players")).then(() => location.reload());
     }
   });
 }
 
-// ---- Questions + chrono ----
+async function updatePoints(id, delta) {
+  const pRef = ref(db, `players/${id}`);
+  const snap = await get(pRef);
+  const p = snap.val();
+  if (!p) return;
+  const newPoints = (p.points || 0) + delta;
+  await update(pRef, { points: newPoints });
+}
+
+// ---- Question & Réponses ----
+
+function listenQuestion() {
+  onValue(ref(db, "currentQuestion"), snap => {
+    const q = snap.val();
+
+    if (!q) {
+      questionZone.classList.add("hidden");
+      playerAnswerZone.classList.add("hidden");
+      adminControls.classList.remove("hidden");
+      finalAnswers.classList.add("hidden");
+      return;
+    }
+
+    if (q.finished) {
+      // Question terminée
+      questionZone.classList.add("hidden");
+      playerAnswerZone.classList.add("hidden");
+      adminControls.classList.remove("hidden");
+
+      finalAnswers.classList.remove("hidden");
+      loadFinalAnswers();
+
+      return;
+    }
+
+    // Question active
+    finalAnswers.classList.add("hidden");
+    questionZone.classList.remove("hidden");
+    questionText.textContent = q.text;
+    questionImage.src = q.image;
+    adminControls.classList.add("hidden");
+
+    const endTime = q.start + QUESTION_DURATION * 1000;
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      const remain = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+      timeLeft.textContent = remain;
+      if (remain <= 0) clearInterval(timerInterval);
+    }, 250);
+
+    if (playerData.role === "player") {
+      playerAnswerZone.classList.remove("hidden");
+    } else {
+      playerAnswerZone.classList.add("hidden");
+    }
+  });
+}
+
+btnAnswer.onclick = () => {
+  const answer = answerInput.value.trim();
+  if (!answer) return alert("Écris ta réponse !");
+  update(ref(db, `players/${playerId}`), { answer });
+  answerInput.value = "";
+};
+
+// ---- Fin de la question ----
+
+function endQuestion() {
+  update(ref(db, "currentQuestion"), { finished: true });
+  loadFinalAnswers();
+
+  questionZone.classList.add("hidden");
+  playerAnswerZone.classList.add("hidden");
+  adminControls.classList.remove("hidden");
+}
 
 btnNextQuestion.onclick = async () => {
   if (!questionsLoaded) return alert("Chargement des questions en cours...");
   if (currentQuestionIndex >= questions.length) return alert("Fin des questions");
 
-  // Effacer les réponses avant de poser une nouvelle question
+  // Reset des réponses avant prochaine question
   const snap = await get(ref(db, "players"));
   const players = snap.val() || {};
   for (const id in players) {
@@ -171,94 +249,40 @@ btnNextQuestion.onclick = async () => {
   set(ref(db, "currentQuestion"), {
     text: q.question,
     image: q.image,
-    start: now
+    start: now,
+    finished: false
   });
 
   clearTimeout(timerInterval);
   lookupEnd(now + QUESTION_DURATION * 1000);
+  finalAnswers.classList.add("hidden");
 };
 
-function endQuestion() {
-  set(ref(db, "currentQuestion"), null);
-
-  // Afficher les réponses pour TOUS dans le lobby
-  loadFinalAnswers();
-
-  // Cacher les zones question et réponses
-  questionZone.classList.add("hidden");
-  playerAnswerZone.classList.add("hidden");
-  adminControls.classList.remove("hidden");
+// Fonction pour checker fin du chrono
+function lookupEnd(msEnd) {
+  const delay = msEnd - Date.now();
+  if (delay <= 0) {
+    endQuestion();
+  } else {
+    setTimeout(() => {
+      endQuestion();
+    }, delay);
+  }
 }
 
-function lookupEnd(when) {
-  const delay = when - Date.now();
-  timerInterval = setTimeout(endQuestion, delay);
-}
+// ---- Affichage des réponses ----
 
-// côté joueur et admin : réaction à la question
-function listenQuestion() {
-  onValue(ref(db, "currentQuestion"), snap => {
-    const q = snap.val();
-    if (!q) {
-      questionZone.classList.add("hidden");
-      playerAnswerZone.classList.add("hidden");
-      return;
+async function loadFinalAnswers() {
+  finalAnswers.innerHTML = "<h3>Réponses des joueurs :</h3>";
+  const snap = await get(ref(db, "players"));
+  const players = snap.val() || {};
+  for (const id in players) {
+    if (players[id].role === "player" && players[id].online) {
+      const ans = players[id].answer || "(pas de réponse)";
+      const div = document.createElement("div");
+      div.textContent = `${players[id].pseudo} : ${ans}`;
+      finalAnswers.appendChild(div);
     }
-    questionZone.classList.remove("hidden");
-    questionText.textContent = q.text;
-    questionImage.src = q.image;
-
-    // chrono
-    const end = q.start + QUESTION_DURATION * 1000;
-    clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-      const remain = Math.max(0, Math.ceil((end - Date.now()) / 1000));
-      timeLeft.textContent = remain;
-      if (remain <= 0) clearInterval(timerInterval);
-    }, 250);
-
-    playerAnswerZone.classList.toggle("hidden", playerData.role !== "player");
-    adminControls.classList.toggle("hidden", playerData.role !== "admin");
-  });
+  }
 }
 
-// joueur envoie sa réponse
-btnAnswer.onclick = () => {
-  const ans = answerInput.value.trim();
-  if (ans)
-    update(ref(db, `players/${playerId}`), { answer: ans });
-};
-
-// Afficher les réponses dans le lobby (pour tous les joueurs et l’admin)
-function loadFinalAnswers() {
-  onValue(ref(db, "players"), snap => {
-    const players = snap.val() || {};
-    playerList.innerHTML = "";
-
-    for (const id in players) {
-      const p = players[id];
-      if (!p.online || p.role !== "player") continue;
-
-      const row = document.createElement("div");
-      row.className = "row";
-      row.innerHTML = `🎮 <strong>${p.pseudo}</strong> - <span class="points">${p.points} pts</span><br><em>Réponse : ${p.answer || "(aucune)"}</em>`;
-
-      // Si admin, boutons + / -
-      if (playerData.role === "admin") {
-        const plus = document.createElement("button");
-        plus.textContent = "+";
-        plus.style.fontSize = "0.8em";
-        plus.onclick = () => update(ref(db, `players/${id}`), { points: p.points + 1 });
-
-        const minus = document.createElement("button");
-        minus.textContent = "-";
-        minus.style.fontSize = "0.8em";
-        minus.onclick = () => update(ref(db, `players/${id}`), { points: Math.max(0, p.points - 1) });
-
-        row.append(plus, minus);
-      }
-
-      playerList.appendChild(row);
-    }
-  });
-}
