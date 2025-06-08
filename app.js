@@ -260,11 +260,21 @@ function loadAdminAnswers() {
   });
 }
 
-// Afficher réponses finales à tous
 function loadFinalAnswers() {
   get(ref(db, "players")).then(snap => {
     const pls = snap.val() || {};
     finalAnswers.innerHTML = "";
+
+    // Affiche la réponse correcte (si disponible)
+    const currentQ = questions[currentQuestionIndex - 1]; // question précédente
+    if (currentQ?.reponse) {
+      const repDiv = document.createElement("div");
+      repDiv.innerHTML = `<strong>✅ Réponse correcte :</strong> ${currentQ.reponse}`;
+      repDiv.style.marginBottom = "10px";
+      finalAnswers.appendChild(repDiv);
+    }
+
+    // Réponses des joueurs
     Object.values(pls).forEach(p => {
       if (p.role !== "player") return;
       const div = document.createElement("div");
@@ -273,3 +283,4 @@ function loadFinalAnswers() {
     });
   });
 }
+
