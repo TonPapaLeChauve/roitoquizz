@@ -8,122 +8,132 @@
     body {
       background-color: #121212;
       color: #f1c40f;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
+      font-family: 'Arial', sans-serif;
       text-align: center;
-    }
-
-    input, select, button {
-      padding: 10px;
-      margin: 5px;
-      border: none;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
-
-    input, select {
-      background-color: #2c2c2c;
-      color: white;
-    }
-
-    button {
-      background-color: #f1c40f;
-      color: black;
-      cursor: pointer;
+      padding: 20px;
     }
 
     .hidden {
       display: none;
     }
 
-    #questionContainer img {
-      max-width: 80%;
+    input, select, button {
+      padding: 10px;
+      margin: 10px;
+      font-size: 1em;
+      border: none;
+      border-radius: 5px;
+    }
+
+    input, select {
+      background-color: #1e1e1e;
+      color: #f1c40f;
+    }
+
+    button {
+      background-color: #f1c40f;
+      color: #121212;
+      cursor: pointer;
+    }
+
+    #lobby {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .list-section {
+      margin: 20px 0;
+    }
+
+    .list-section h3 {
+      margin-bottom: 5px;
+    }
+
+    #questionSection {
+      margin-top: 30px;
+    }
+
+    #questionImage {
+      width: 300px;
+      max-width: 100%;
+      border: 2px solid #f1c40f;
       margin-top: 10px;
     }
 
-    .player-entry {
-      margin: 10px 0;
-      font-size: 1.1rem;
-    }
-
-    #answersList button {
-      margin-left: 10px;
-    }
-
-    .zone {
-      background-color: #1e1e1e;
-      padding: 15px;
+    #answers {
       margin-top: 20px;
-      border-radius: 6px;
+    }
+
+    #answers div {
+      margin: 5px 0;
+    }
+
+    .answer-button {
+      margin-left: 10px;
+      padding: 5px 10px;
+      font-size: 0.9em;
     }
   </style>
 </head>
 <body>
 
-  <h1>👑 Roi des ToCards 🎮</h1>
-
-  <!-- Étape 1 : pseudo -->
+  <!-- Étape pseudo -->
   <div id="stepPseudo">
-    <h2>Choisis ton pseudo</h2>
-    <input type="text" id="pseudoInput" placeholder="Pseudo" />
-    <button id="btnPseudo">Continuer</button>
+    <h1>👑 Roi des ToCards</h1>
+    <input type="text" id="pseudoInput" placeholder="Entre ton pseudo" />
+    <br />
+    <button id="btnPseudo">Valider</button>
   </div>
 
-  <!-- Étape 2 : rôle -->
+  <!-- Étape rôle -->
   <div id="stepRole" class="hidden">
     <h2>Choisis ton rôle</h2>
     <select id="roleSelect">
       <option value="">-- Choisir --</option>
-      <option value="admin">Administrateur 👑</option>
-      <option value="player">Joueur 🎮</option>
+      <option value="joueur">🎮 Joueur</option>
+      <option value="admin">👑 Administrateur</option>
     </select>
-    <input type="password" id="adminPassword" placeholder="Mot de passe admin" class="hidden"/>
-    <br/>
-    <button id="btnValiderRole">Valider</button>
+    <br />
+    <input type="password" id="adminPassword" class="hidden" placeholder="Mot de passe admin" />
+    <br />
+    <button id="btnValiderRole">Rejoindre</button>
   </div>
 
   <!-- Lobby -->
   <div id="lobby" class="hidden">
     <h2>Lobby</h2>
 
-    <div class="zone">
-      <h3>👑 Administrateur</h3>
+    <div class="list-section">
+      <h3>Admin</h3>
       <div id="adminList"></div>
     </div>
 
-    <div class="zone">
-      <h3>🎮 Joueurs</h3>
+    <div class="list-section">
+      <h3>Joueurs</h3>
       <div id="playerList"></div>
     </div>
 
-    <!-- Contrôles admin -->
-    <div id="adminControls" class="hidden zone">
-      <h3>Contrôle de la partie</h3>
-      <button id="launchQuestion">Lancer la question suivante</button>
-    </div>
+    <!-- Section admin pour lancer les questions -->
+    <div id="questionSection" class="hidden">
+      <h3 id="questionText"></h3>
+      <img id="questionImage" src="" alt="" />
+      <p id="timer"></p>
 
-    <!-- Zone de réponses visibles par l'admin -->
-    <div id="adminAnswers" class="hidden zone">
-      <h3>Réponses en direct</h3>
-      <div id="answersList"></div>
-    </div>
-  </div>
+      <!-- Pour l'admin -->
+      <div id="answers"></div>
+      <button id="startQuestionBtn">➡️ Lancer une question</button>
 
-  <!-- Affichage question + chrono -->
-  <div id="questionContainer" class="hidden">
-    <h2 id="questionText"></h2>
-    <img id="questionImage" src="#" alt="Image question" />
-    <div id="timer" style="font-size: 2rem; margin: 15px;"></div>
-
-    <!-- Zone de réponse joueur -->
-    <div id="playerAnswerContainer" class="hidden">
-      <input type="text" id="playerAnswerInput" placeholder="Tape ta réponse ici" autocomplete="off" />
-      <button id="btnSendAnswer">Envoyer</button>
+      <!-- Pour les joueurs -->
+      <div id="answerZone" class="hidden">
+        <input type="text" id="answerInput" placeholder="Écris ta réponse ici" />
+        <button id="btnAnswer">Répondre</button>
+      </div>
     </div>
   </div>
 
-  <!-- Firebase et JS principal -->
+  <!-- Script Firebase & App -->
   <script type="module" src="app.js"></script>
+
 </body>
 </html>
