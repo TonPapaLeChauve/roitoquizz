@@ -3,97 +3,40 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Quiz en Temps Réel</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #eee;
-      text-align: center;
-      padding: 1rem;
-      max-width: 600px;
-      margin: auto;
-    }
-    input, select, button {
-      font-size: 1.2rem;
-      padding: 0.5rem;
-      margin: 0.5rem 0;
-      width: 80%;
-      max-width: 300px;
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
-      border-radius: 4px;
-      border: none;
-    }
-    button {
-      cursor: pointer;
-      background: gold;
-      color: #111;
-      font-weight: bold;
-      transition: background 0.3s ease;
-    }
-    button:hover {
-      background: orange;
-    }
-    .hidden {
-      display: none !important;
-    }
-    #adminList, #playerList {
-      text-align: left;
-      max-height: 150px;
-      overflow-y: auto;
-      background: #222;
-      padding: 0.5rem;
-      margin: 1rem auto;
-      border-radius: 6px;
-    }
-    .admin .emoji::before {
-      content: "👑 ";
-    }
-    .player .emoji::before {
-      content: "🎮 ";
-    }
-    .points {
-      float: right;
-    }
-  </style>
+  <title>Roi des Tocards</title>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
   <div id="stepPseudo">
-    <h2>Choisis ton pseudo</h2>
-    <input type="text" id="pseudoInput" placeholder="Ton pseudo" autocomplete="off" />
-    <button id="btnPseudo">Valider pseudo</button>
+    <input id="pseudoInput" type="text" placeholder="Ton pseudo"/>
+    <button id="btnPseudo">Valider</button>
   </div>
 
   <div id="stepRole" class="hidden">
-    <h2>Choisis ton rôle</h2>
     <select id="roleSelect">
-      <option value="">-- Choisir --</option>
-      <option value="admin">Admin</option>
-      <option value="joueur">Joueur</option>
+      <option value="">-- Choisir un rôle --</option>
+      <option value="player">👾 Joueur</option>
+      <option value="admin">👑 Admin</option>
     </select>
-    <input type="password" id="adminPassword" placeholder="Mot de passe admin" class="hidden" autocomplete="off" />
-    <button id="btnValiderRole">Valider rôle</button>
+    <input id="adminPassword" type="password" class="hidden" placeholder="Mot de passe admin"/>
+    <button id="btnValiderRole">Rejoindre</button>
   </div>
 
   <div id="lobby" class="hidden">
-    <h2>Lobby - Joueurs connectés</h2>
-    <div>
-      <h3>Admins</h3>
-      <div id="adminList"></div>
-    </div>
-    <div>
-      <h3>Joueurs</h3>
-      <div id="playerList"></div>
-    </div>
+    <h2>👑 Admins</h2>
+    <div id="adminList"></div>
+
+    <h2>🎮 Joueurs</h2>
+    <div id="playerList"></div>
+
     <div id="adminControls" class="hidden">
-      <button id="btnNextQuestion">➡️ Prochaine Question</button>
-      <div id="questionZone" class="hidden">
-        <h3 id="questionText"></h3>
-        <img id="questionImage" src="" style="max-width: 100%; max-height: 200px;"/>
-        <div id="timer">⏱️ Temps restant : <span id="timeLeft"></span>s</div>
-      </div>
+      <button id="btnNextQuestion">➡️ Lancer Question</button>
+    </div>
+
+    <div id="questionZone" class="hidden">
+      <p id="questionText"></p>
+      <img id="questionImage" src="" alt="image question" style="max-width: 100%;"/>
+      <p>⏳ Temps restant : <span id="timeLeft"></span>s</p>
     </div>
   </div>
 
