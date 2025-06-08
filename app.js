@@ -181,13 +181,15 @@ function listenQuestion() {
       // Question terminée
       questionZone.classList.add("hidden");
       playerAnswerZone.classList.add("hidden");
-      adminControls.classList.remove("hidden");
-
+      adminControls.classList.toggle("hidden", playerData.role !== "admin");
+    
       finalAnswers.classList.remove("hidden");
       loadFinalAnswers();
-
+    
       return;
     }
+
+
 
     // Question active
     finalAnswers.classList.add("hidden");
