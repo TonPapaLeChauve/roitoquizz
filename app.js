@@ -26,8 +26,15 @@ const QUESTION_DURATION = 30;
 let questions = [];
 
 // URL vers ton JSON sur GitHub
+let questionsLoaded = false;
+
 fetch("https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/questions.json")
-  .then(r => r.json()).then(data => questions = data);
+  .then(r => r.json())
+  .then(data => {
+    questions = data;
+    questionsLoaded = true;
+  });
+
 
 // ----- DOM ↯
 const e = id => document.getElementById(id);
@@ -142,8 +149,8 @@ function listenLobby() {
 }
 
 // ---- Questions + chrono ----
-
 btnNextQuestion.onclick = () => {
+  if (!questionsLoaded) return alert("Chargement des questions en cours...");
   if (currentQuestionIndex >= questions.length) return alert("Fin des questions");
 
   const q = questions[currentQuestionIndex++];
@@ -158,6 +165,7 @@ btnNextQuestion.onclick = () => {
   clearTimeout(timerInterval);
   lookupEnd(now + QUESTION_DURATION * 1000);
 };
+
 
 function endQuestion() {
   set(ref(db, "currentQuestion"), null);
