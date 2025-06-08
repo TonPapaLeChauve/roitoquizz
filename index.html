@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Quiz en Temps Réel</title>
   <style>
     body {
@@ -47,54 +47,61 @@
       padding: 0.5rem;
       margin: 1rem auto;
       border-radius: 6px;
+      min-height: 50px;
+      font-size: 1.1rem;
     }
-    .admin .emoji::before {
-      content: "👑 ";
+    img {
+      max-width: 100%;
+      margin-top: 10px;
     }
-    .player .emoji::before {
-      content: "🎮 ";
-    }
-    .points {
-      float: right;
+    #timer {
+      font-size: 1.5rem;
+      margin-top: 10px;
+      font-weight: bold;
+      color: gold;
     }
   </style>
 </head>
 <body>
+
+  <!-- Étape pseudo -->
   <div id="stepPseudo">
     <h2>Choisis ton pseudo</h2>
-    <input type="text" id="pseudoInput" placeholder="Ton pseudo" autocomplete="off" />
+    <input id="pseudoInput" placeholder="Ton pseudo" autocomplete="off" />
     <button id="btnPseudo">Valider pseudo</button>
   </div>
 
+  <!-- Étape rôle -->
   <div id="stepRole" class="hidden">
     <h2>Choisis ton rôle</h2>
     <select id="roleSelect">
       <option value="">-- Choisir --</option>
-      <option value="admin">Admin</option>
-      <option value="joueur">Joueur</option>
+      <option value="admin">👑 Admin</option>
+      <option value="player">🎮 Joueur</option>
     </select>
-    <input type="password" id="adminPassword" placeholder="Mot de passe admin" class="hidden" autocomplete="off" />
+    <input type="password" id="adminPassword" class="hidden" placeholder="Mot de passe admin" autocomplete="off" />
     <button id="btnValiderRole">Valider rôle</button>
   </div>
 
+  <!-- Lobby -->
   <div id="lobby" class="hidden">
-    <h2>Lobby - Joueurs connectés</h2>
-    <div>
-      <h3>Admins</h3>
-      <div id="adminList"></div>
-    </div>
-    <div>
-      <h3>Joueurs</h3>
-      <div id="playerList"></div>
-    </div>
+    <h2>Lobby</h2>
+    <h3>👑 Administrateur</h3>
+    <div id="adminList"></div>
+    <h3>🎮 Joueurs</h3>
+    <div id="playerList"></div>
+
+    <!-- Contrôles admin -->
     <div id="adminControls" class="hidden">
-      <button id="btnNextQuestion">➡️ Prochaine Question</button>
-      <div id="questionZone" class="hidden">
-        <h3 id="questionText"></h3>
-        <img id="questionImage" src="" style="max-width: 100%; max-height: 200px;"/>
-        <div id="timer">⏱️ Temps restant : <span id="timeLeft"></span>s</div>
-      </div>
+      <button id="launchQuestion">Lancer la question suivante</button>
     </div>
+  </div>
+
+  <!-- Affichage question + chrono -->
+  <div id="questionContainer" class="hidden">
+    <h2 id="questionText"></h2>
+    <img id="questionImage" src="#" alt="Image question" />
+    <div id="timer"></div>
   </div>
 
   <script type="module" src="app.js"></script>
