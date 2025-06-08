@@ -1,29 +1,64 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Roi des ToCards</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiz en Temps Réel</title>
   <style>
     body {
-      font-family: sans-serif;
-      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      text-align: center;
+      padding: 1rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    input, select, button {
+      font-size: 1.2rem;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      width: 80%;
+      max-width: 300px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      border-radius: 4px;
+      border: none;
+    }
+    button {
+      cursor: pointer;
+      background: gold;
+      color: #111;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: orange;
     }
     .hidden {
-      display: none;
+      display: none !important;
     }
-    #adminList div,
-    #playerList div {
-      margin: 5px 0;
+    #adminList, #playerList {
+      text-align: left;
+      max-height: 150px;
+      overflow-y: auto;
+      background: #222;
+      padding: 0.5rem;
+      margin: 1rem auto;
+      border-radius: 6px;
+      min-height: 50px;
+      font-size: 1.1rem;
     }
-    #questionImage {
+    img {
       max-width: 100%;
-      height: auto;
       margin-top: 10px;
     }
     #timer {
-      font-weight: bold;
-      font-size: 1.5em;
+      font-size: 1.5rem;
       margin-top: 10px;
+      font-weight: bold;
+      color: gold;
     }
   </style>
 </head>
@@ -31,9 +66,9 @@
 
   <!-- Étape pseudo -->
   <div id="stepPseudo">
-    <h2>Entre ton pseudo</h2>
-    <input type="text" id="pseudoInput" placeholder="Ton pseudo">
-    <button id="btnPseudo">Valider</button>
+    <h2>Choisis ton pseudo</h2>
+    <input type="text" id="pseudoInput" placeholder="Ton pseudo" autocomplete="off" />
+    <button id="btnPseudo">Valider pseudo</button>
   </div>
 
   <!-- Étape rôle -->
@@ -41,11 +76,11 @@
     <h2>Choisis ton rôle</h2>
     <select id="roleSelect">
       <option value="">-- Choisir --</option>
-      <option value="player">Joueur</option>
-      <option value="admin">Administrateur</option>
+      <option value="admin">👑 Admin</option>
+      <option value="player">🎮 Joueur</option>
     </select>
-    <input type="password" id="adminPassword" class="hidden" placeholder="Mot de passe admin">
-    <button id="btnValiderRole">Entrer</button>
+    <input type="password" id="adminPassword" placeholder="Mot de passe admin" class="hidden" autocomplete="off" />
+    <button id="btnValiderRole">Valider rôle</button>
   </div>
 
   <!-- Lobby -->
@@ -67,10 +102,10 @@
     </div>
   </div>
 
-  <!-- Question -->
+  <!-- Question & chrono -->
   <div id="questionContainer" class="hidden">
     <h2 id="questionText"></h2>
-    <img id="questionImage" src="" alt="">
+    <img id="questionImage" src="" alt="Image question" />
     <div id="timer"></div>
   </div>
 
