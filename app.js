@@ -202,8 +202,8 @@ function listenQuestion() {
 
       adminControls.classList.toggle("hidden", playerData.role !== "admin");
       finalAnswers.classList.remove("hidden");
+      loadFinalAnswers();
 
-      loadFinalAnswers(); // ✅ tout le monde voit ça
       return;
     }
 
@@ -264,28 +264,25 @@ function loadFinalAnswers() {
     const pls = snap.val() || {};
     finalAnswers.innerHTML = "";
 
-    if (!questions.length || currentQuestionIndex <= 0) return;
-    const currentQ = questions[currentQuestionIndex - 1];
-
+    // Bonne réponse
+    const currentQ = questions[currentQuestionIndex - 1]; // question précédente
     if (currentQ?.reponse) {
       const repDiv = document.createElement("div");
-      repDiv.innerHTML = `<strong>✅ Réponse correcte :</strong> ${currentQ.reponse}`;
+      repDiv.textContent = `Réponse correcte : ${currentQ.reponse}`;
       repDiv.style.marginBottom = "10px";
-      repDiv.style.padding = "8px";
-      repDiv.style.backgroundColor = "#d4edda";
-      repDiv.style.border = "1px solid #c3e6cb";
-      repDiv.style.borderRadius = "5px";
       finalAnswers.appendChild(repDiv);
     }
 
+    // Réponses des joueurs
     Object.values(pls).forEach(p => {
       if (p.role !== "player") return;
       const div = document.createElement("div");
-      div.innerHTML = `<strong>${p.pseudo} :</strong> ${p.answer || "(pas de réponse)"}`;
+      div.textContent = `${p.pseudo} : ${p.answer || "(pas de réponse)"}`;
       finalAnswers.appendChild(div);
     });
   });
 }
+
 
 // Démarrer l'app après chargement des questions
 (async function main() {
