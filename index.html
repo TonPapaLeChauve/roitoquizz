@@ -4,26 +4,40 @@
   <meta charset="UTF-8">
   <title>Roi des ToCards</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
-    .hidden { display: none; }
-    #lobby div, #adminList div, #playerList div { margin: 5px 0; }
-    button { margin-left: 5px; }
-    img { max-width: 100%; height: auto; margin-top: 10px; }
-    #timer { font-size: 1.5em; font-weight: bold; margin-top: 10px; }
-    .section { margin-bottom: 20px; padding: 10px; background: #fff; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+    #adminList div,
+    #playerList div {
+      margin: 5px 0;
+    }
+    #questionImage {
+      max-width: 100%;
+      height: auto;
+      margin-top: 10px;
+    }
+    #timer {
+      font-weight: bold;
+      font-size: 1.5em;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Étape 1 : Pseudo -->
-  <div id="stepPseudo" class="section">
+  <!-- Étape pseudo -->
+  <div id="stepPseudo">
     <h2>Entre ton pseudo</h2>
-    <input type="text" id="pseudoInput" placeholder="Pseudo">
+    <input type="text" id="pseudoInput" placeholder="Ton pseudo">
     <button id="btnPseudo">Valider</button>
   </div>
 
-  <!-- Étape 2 : Choix rôle -->
-  <div id="stepRole" class="section hidden">
+  <!-- Étape rôle -->
+  <div id="stepRole" class="hidden">
     <h2>Choisis ton rôle</h2>
     <select id="roleSelect">
       <option value="">-- Choisir --</option>
@@ -31,11 +45,11 @@
       <option value="admin">Administrateur</option>
     </select>
     <input type="password" id="adminPassword" class="hidden" placeholder="Mot de passe admin">
-    <button id="btnValiderRole">Entrer dans le lobby</button>
+    <button id="btnValiderRole">Entrer</button>
   </div>
 
   <!-- Lobby -->
-  <div id="lobby" class="section hidden">
+  <div id="lobby" class="hidden">
     <h2>Lobby</h2>
 
     <div>
@@ -48,14 +62,13 @@
       <div id="playerList"></div>
     </div>
 
-    <!-- Lancer question (admin uniquement) -->
     <div id="adminControls" class="hidden">
       <button id="launchQuestion">Lancer la question suivante</button>
     </div>
   </div>
 
-  <!-- Question affichée -->
-  <div id="questionContainer" class="section hidden">
+  <!-- Question -->
+  <div id="questionContainer" class="hidden">
     <h2 id="questionText"></h2>
     <img id="questionImage" src="" alt="">
     <div id="timer"></div>
