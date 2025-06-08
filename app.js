@@ -4,7 +4,6 @@ import {
   onDisconnect, update, remove, get
 } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
-// Config Firebase
 const config = {
   apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
   authDomain: "roidestocards-d0084.firebaseapp.com",
@@ -24,12 +23,17 @@ let currentQuestionIndex = 0;
 let timerInterval = null;
 const QUESTION_DURATION = 30;
 let questions = [];
+let questionsLoaded = false;
 
-// Chargement des questions depuis GitHub
+// URL vers ton JSON sur GitHub
 fetch("https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/questions.json")
-  .then(r => r.json()).then(data => questions = data);
+  .then(r => r.json())
+  .then(data => {
+    questions = data;
+    questionsLoaded = true;
+  });
 
-// ----- DOM helper
+// ----- DOM ↯
 const e = id => document.getElementById(id);
 const stepPseudo = e("stepPseudo"), pseudoInput = e("pseudoInput"), btnPseudo = e("btnPseudo");
 const stepRole = e("stepRole"), roleSelect = e("roleSelect"), adminPassword = e("adminPassword"), btnValiderRole = e("btnValiderRole");
@@ -39,7 +43,7 @@ const questionZone = e("questionZone"), questionText = e("questionText"), questi
 const playerAnswerZone = e("playerAnswerZone"), answerInput = e("answerInput"), btnAnswer = e("btnAnswer");
 const adminAnswers = e("adminAnswers"), finalAnswers = e("finalAnswers");
 
-// Étapes de connexion
+// ---- Étapes de connexion ----
 
 btnPseudo.onclick = () => {
   const pseudo = pseudoInput.value.trim();
@@ -95,7 +99,7 @@ btnValiderRole.onclick = async () => {
   if (role === "admin") listenQuestion();
 };
 
-// Lobby & points
+// ---- Lobby et points --------
 
 function listenLobby() {
   onValue(ref(db, "players"), snap => {
@@ -111,43 +115,133 @@ function listenLobby() {
 
       const row = document.createElement("div");
       row.className = "row";
-      const emoji = p.role === "admin" ? "👑" : "🎮";
-      row.innerHTML = `${emoji} <strong>${p.pseudo}</strong>`;
-      if (p.role === "player") {
-        row.innerHTML += ` - <span class="points">${p.points} pts</span>`;
-      }
 
-      if (playerData.role === "admin" && p.role === "player" && id !== playerId) {
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = p.pseudo;
+      row.appendChild(nameSpan);
+
+      if (p.role === "player") {
+        const pointsSpan = document.createElement("span");
+        pointsSpan.className = "points";
+        pointsSpan.textContent = p.points || 0;
+        row.appendChild(pointsSpan);
+        playerList.appendChild(row);
+      } else if (p.role === "admin") {
+        adminOnline = true;
+
+        // Ajout des boutons + et -
         const plus = document.createElement("button");
         plus.textContent = "+";
-        plus.className = "small-btn";
-        plus.onclick = () => update(ref(db, `players/${id}`), { points: p.points + 1 });
+        plus.classList.add("admin-point-btn");
+        plus.onclick = () => updatePoints(id, 1);
+
         const minus = document.createElement("button");
         minus.textContent = "-";
-        minus.className = "small-btn";
-        minus.onclick = () => update(ref(db, `players/${id}`), { points: Math.max(0, p.points - 1) });
-        row.append(plus, minus);
-      }
+        minus.classList.add("admin-point-btn");
+        minus.onclick = () => updatePoints(id, -1);
 
-      if (p.role === "admin") {
+        row.appendChild(plus);
+        row.appendChild(minus);
+
+        const pointsSpan = document.createElement("span");
+        pointsSpan.className = "points";
+        pointsSpan.textContent = p.points || 0;
+        row.appendChild(pointsSpan);
+
         adminList.appendChild(row);
-        adminOnline = true;
-      } else {
-        playerList.appendChild(row);
       }
-    }
-
-    if (!adminOnline) {
-      alert("L'administrateur s'est déconnecté. Partie annulée.");
-      remove(ref(db, "players")).then(() => location.reload());
     }
   });
 }
 
-// Questions + chrono
+async function updatePoints(id, delta) {
+  const pRef = ref(db, `players/${id}`);
+  const snap = await get(pRef);
+  const p = snap.val();
+  if (!p) return;
+  const newPoints = (p.points || 0) + delta;
+  await update(pRef, { points: newPoints });
+}
 
-btnNextQuestion.onclick = () => {
+// ---- Question & Réponses ----
+
+function listenQuestion() {
+  onValue(ref(db, "currentQuestion"), snap => {
+    const q = snap.val();
+
+    if (!q) {
+      questionZone.classList.add("hidden");
+      playerAnswerZone.classList.add("hidden");
+      adminControls.classList.remove("hidden");
+      finalAnswers.classList.add("hidden");
+      return;
+    }
+
+    if (q.finished) {
+      // Question terminée
+      questionZone.classList.add("hidden");
+      playerAnswerZone.classList.add("hidden");
+      adminControls.classList.remove("hidden");
+
+      finalAnswers.classList.remove("hidden");
+      loadFinalAnswers();
+
+      return;
+    }
+
+    // Question active
+    finalAnswers.classList.add("hidden");
+    questionZone.classList.remove("hidden");
+    questionText.textContent = q.text;
+    questionImage.src = q.image;
+    adminControls.classList.add("hidden");
+
+    const endTime = q.start + QUESTION_DURATION * 1000;
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      const remain = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+      timeLeft.textContent = remain;
+      if (remain <= 0) clearInterval(timerInterval);
+    }, 250);
+
+    if (playerData.role === "player") {
+      playerAnswerZone.classList.remove("hidden");
+    } else {
+      playerAnswerZone.classList.add("hidden");
+    }
+  });
+}
+
+btnAnswer.onclick = () => {
+  const answer = answerInput.value.trim();
+  if (!answer) return alert("Écris ta réponse !");
+  update(ref(db, `players/${playerId}`), { answer });
+  answerInput.value = "";
+};
+
+// ---- Fin de la question ----
+
+function endQuestion() {
+  update(ref(db, "currentQuestion"), { finished: true });
+  loadFinalAnswers();
+
+  questionZone.classList.add("hidden");
+  playerAnswerZone.classList.add("hidden");
+  adminControls.classList.remove("hidden");
+}
+
+btnNextQuestion.onclick = async () => {
+  if (!questionsLoaded) return alert("Chargement des questions en cours...");
   if (currentQuestionIndex >= questions.length) return alert("Fin des questions");
+
+  // Reset des réponses avant prochaine question
+  const snap = await get(ref(db, "players"));
+  const players = snap.val() || {};
+  for (const id in players) {
+    if (players[id].role === "player") {
+      await update(ref(db, `players/${id}`), { answer: "" });
+    }
+  }
 
   const q = questions[currentQuestionIndex++];
   const now = Date.now();
@@ -161,115 +255,34 @@ btnNextQuestion.onclick = () => {
 
   clearTimeout(timerInterval);
   lookupEnd(now + QUESTION_DURATION * 1000);
-
-  // Supprimer les réponses des joueurs
-  get(ref(db, "players")).then(snap => {
-    const pls = snap.val() || {};
-    for (const id in pls) {
-      if (pls[id].role === "player") {
-        update(ref(db, `players/${id}`), { answer: "" });
-      }
-    }
-  });
-
   finalAnswers.classList.add("hidden");
 };
 
-function endQuestion() {
-  set(ref(db, "currentQuestion/finished"), true);
+// Fonction pour checker fin du chrono
+function lookupEnd(msEnd) {
+  const delay = msEnd - Date.now();
+  if (delay <= 0) {
+    endQuestion();
+  } else {
+    setTimeout(() => {
+      endQuestion();
+    }, delay);
+  }
 }
 
-function lookupEnd(when) {
-  const delay = when - Date.now();
-  timerInterval = setTimeout(endQuestion, delay);
-}
+// ---- Affichage des réponses ----
 
-// Affichage question côté joueur/admin
-function listenQuestion() {
-  onValue(ref(db, "currentQuestion"), snap => {
-    const q = snap.val();
-
-    if (!q) {
-      questionZone.classList.add("hidden");
-      playerAnswerZone.classList.add("hidden");
-      adminAnswers.classList.add("hidden");
-      finalAnswers.classList.add("hidden");
-      return;
-    }
-
-    if (q.finished) {
-      // Fin de question : afficher réponses finales, masquer saisie
-      questionZone.classList.add("hidden");
-      playerAnswerZone.classList.add("hidden");
-      adminAnswers.classList.add("hidden");
-      adminControls.classList.toggle("hidden", playerData.role !== "admin");
-
-      finalAnswers.classList.remove("hidden");
-      loadFinalAnswers();
-      return;
-    }
-
-    // Question en cours
-    questionZone.classList.remove("hidden");
-    questionText.textContent = q.text;
-    questionImage.src = q.image;
-
-    finalAnswers.classList.add("hidden");
-
-    // Chrono
-    const end = q.start + QUESTION_DURATION * 1000;
-    clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-      const remain = Math.max(0, Math.ceil((end - Date.now()) / 1000));
-      timeLeft.textContent = remain;
-      if (remain <= 0) clearInterval(timerInterval);
-    }, 250);
-
-    playerAnswerZone.classList.toggle("hidden", playerData.role !== "player");
-    adminAnswers.classList.toggle("hidden", playerData.role !== "admin");
-    adminControls.classList.toggle("hidden", playerData.role !== "admin");
-
-    if (playerData.role === "admin") loadAdminAnswers();
-  });
-}
-
-// Joueur envoie sa réponse
-btnAnswer.onclick = () => {
-  const ans = answerInput.value.trim();
-  if (ans)
-    update(ref(db, `players/${playerId}`), { answer: ans });
-};
-
-// Admin lit les réponses en direct
-function loadAdminAnswers() {
-  onValue(ref(db, "players"), snap => {
-    const pls = snap.val() || {};
-    adminAnswers.innerHTML = "";
-    Object.entries(pls).forEach(([id, p]) => {
-      if (p.role !== "player") return;
-      const row = document.createElement("div");
-      row.className = "row";
-      row.innerHTML = `<strong>${p.pseudo} :</strong> ${p.answer || ""}`;
-      const btnVal = document.createElement("button");
-      btnVal.textContent = "+1";
-      btnVal.className = "small-btn";
-      btnVal.onclick = () => update(ref(db, `players/${id}`), { points: p.points + 1 });
-      row.appendChild(btnVal);
-      adminAnswers.appendChild(row);
-    });
-  });
-}
-
-// Afficher réponses finales à tous
-function loadFinalAnswers() {
-  get(ref(db, "players")).then(snap => {
-    const pls = snap.val() || {};
-    finalAnswers.innerHTML = "";
-    Object.values(pls).forEach(p => {
-      if (p.role !== "player") return;
+async function loadFinalAnswers() {
+  finalAnswers.innerHTML = "<h3>Réponses des joueurs :</h3>";
+  const snap = await get(ref(db, "players"));
+  const players = snap.val() || {};
+  for (const id in players) {
+    if (players[id].role === "player" && players[id].online) {
+      const ans = players[id].answer || "(pas de réponse)";
       const div = document.createElement("div");
-      div.innerHTML = `<strong>${p.pseudo} :</strong> ${p.answer || "(pas de réponse)"}`;
+      div.textContent = `${players[id].pseudo} : ${ans}`;
       finalAnswers.appendChild(div);
-    });
-  });
+    }
+  }
 }
+
