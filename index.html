@@ -3,137 +3,100 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Roi des ToCards</title>
+  <title>Quiz en Temps Réel</title>
   <style>
     body {
-      background-color: #121212;
-      color: #f1c40f;
-      font-family: 'Arial', sans-serif;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
       text-align: center;
-      padding: 20px;
+      padding: 1rem;
+      max-width: 600px;
+      margin: auto;
     }
-
-    .hidden {
-      display: none;
-    }
-
     input, select, button {
-      padding: 10px;
-      margin: 10px;
-      font-size: 1em;
+      font-size: 1.2rem;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      width: 80%;
+      max-width: 300px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      border-radius: 4px;
       border: none;
-      border-radius: 5px;
     }
-
-    input, select {
-      background-color: #1e1e1e;
-      color: #f1c40f;
-    }
-
     button {
-      background-color: #f1c40f;
-      color: #121212;
       cursor: pointer;
+      background: gold;
+      color: #111;
+      font-weight: bold;
+      transition: background 0.3s ease;
     }
-
-    #lobby {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    button:hover {
+      background: orange;
     }
-
-    .list-section {
-      margin: 20px 0;
+    .hidden {
+      display: none !important;
     }
-
-    .list-section h3 {
-      margin-bottom: 5px;
+    #adminList, #playerList {
+      text-align: left;
+      max-height: 150px;
+      overflow-y: auto;
+      background: #222;
+      padding: 0.5rem;
+      margin: 1rem auto;
+      border-radius: 6px;
     }
-
-    #questionSection {
-      margin-top: 30px;
+    .admin .emoji::before {
+      content: "👑 ";
     }
-
-    #questionImage {
-      width: 300px;
-      max-width: 100%;
-      border: 2px solid #f1c40f;
-      margin-top: 10px;
+    .player .emoji::before {
+      content: "🎮 ";
     }
-
-    #answers {
-      margin-top: 20px;
-    }
-
-    #answers div {
-      margin: 5px 0;
-    }
-
-    .answer-button {
-      margin-left: 10px;
-      padding: 5px 10px;
-      font-size: 0.9em;
+    .points {
+      float: right;
     }
   </style>
 </head>
 <body>
-
-  <!-- Étape pseudo -->
   <div id="stepPseudo">
-    <h1>👑 Roi des ToCards</h1>
-    <input type="text" id="pseudoInput" placeholder="Entre ton pseudo" />
-    <br />
-    <button id="btnPseudo">Valider</button>
+    <h2>Choisis ton pseudo</h2>
+    <input type="text" id="pseudoInput" placeholder="Ton pseudo" autocomplete="off" />
+    <button id="btnPseudo">Valider pseudo</button>
   </div>
 
-  <!-- Étape rôle -->
   <div id="stepRole" class="hidden">
     <h2>Choisis ton rôle</h2>
     <select id="roleSelect">
       <option value="">-- Choisir --</option>
-      <option value="joueur">🎮 Joueur</option>
-      <option value="admin">👑 Administrateur</option>
+      <option value="admin">Admin</option>
+      <option value="joueur">Joueur</option>
     </select>
-    <br />
-    <input type="password" id="adminPassword" class="hidden" placeholder="Mot de passe admin" />
-    <br />
-    <button id="btnValiderRole">Rejoindre</button>
+    <input type="password" id="adminPassword" placeholder="Mot de passe admin" class="hidden" autocomplete="off" />
+    <button id="btnValiderRole">Valider rôle</button>
   </div>
 
-  <!-- Lobby -->
   <div id="lobby" class="hidden">
-    <h2>Lobby</h2>
-
-    <div class="list-section">
-      <h3>Admin</h3>
+    <h2>Lobby - Joueurs connectés</h2>
+    <div>
+      <h3>Admins</h3>
       <div id="adminList"></div>
     </div>
-
-    <div class="list-section">
+    <div>
       <h3>Joueurs</h3>
       <div id="playerList"></div>
     </div>
-
-    <!-- Section admin pour lancer les questions -->
-    <div id="questionSection" class="hidden">
-      <h3 id="questionText"></h3>
-      <img id="questionImage" src="" alt="" />
-      <p id="timer"></p>
-
-      <!-- Pour l'admin -->
-      <div id="answers"></div>
-      <button id="startQuestionBtn">➡️ Lancer une question</button>
-
-      <!-- Pour les joueurs -->
-      <div id="answerZone" class="hidden">
-        <input type="text" id="answerInput" placeholder="Écris ta réponse ici" />
-        <button id="btnAnswer">Répondre</button>
+    <div id="adminControls" class="hidden">
+      <button id="btnNextQuestion">➡️ Prochaine Question</button>
+      <div id="questionZone" class="hidden">
+        <h3 id="questionText"></h3>
+        <img id="questionImage" src="" style="max-width: 100%; max-height: 200px;"/>
+        <div id="timer">⏱️ Temps restant : <span id="timeLeft"></span>s</div>
       </div>
     </div>
   </div>
 
-  <!-- Script Firebase & App -->
   <script type="module" src="app.js"></script>
-
 </body>
 </html>
