@@ -26,7 +26,7 @@ const QUESTION_DURATION = 30;
 let questions = [];
 
 // URL vers ton JSON sur GitHub
-fetch("https://raw.githubusercontent.com/TonPapaLeChauve/main/questions.json")
+fetch("https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/questions.json")
   .then(r => r.json()).then(data => questions = data);
 
 // ----- DOM ↯
