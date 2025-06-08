@@ -19,7 +19,7 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
 // 🔗 REMPLACE par ton propre lien GitHub brut
-const QUESTIONS_URL = "https://raw.githubusercontent.com/tonpseudo/tonrepo/main/questions.json";
+const QUESTIONS_URL = "https://raw.githubusercontent.com/tonpapalechauve/roitoquizz/main/questions.json";
 
 let playerId = null;
 let playerData = { pseudo: null, role: null };
