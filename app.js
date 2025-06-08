@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-import { getDatabase, ref, set, onValue, push, onDisconnect, update, remove, get, child } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+import { getDatabase, ref, set, onValue, push, onDisconnect, update, remove, get } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
@@ -20,7 +20,7 @@ let currentQuestionIndex = 0;
 let questionTimer = null;
 const QUESTION_DURATION = 30;
 
-// UI Elements
+// DOM Elements
 const stepPseudo = document.getElementById("stepPseudo");
 const pseudoInput = document.getElementById("pseudoInput");
 const btnPseudo = document.getElementById("btnPseudo");
@@ -41,61 +41,39 @@ const questionText = document.getElementById("questionText");
 const questionImage = document.getElementById("questionImage");
 const timeLeft = document.getElementById("timeLeft");
 
-// Load questions
 let questions = [];
 fetch("https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/questions.json")
   .then(res => res.json())
   .then(data => questions = data)
-  .catch(err => console.error("Erreur de chargement des questions:", err));
+  .catch(err => console.error("Erreur chargement questions :", err));
 
-// Étape 1 : pseudo
 btnPseudo.onclick = () => {
   const pseudo = pseudoInput.value.trim();
-  if (!pseudo) {
-    alert("Entre un pseudo");
-    return;
-  }
+  if (!pseudo) return alert("Entre un pseudo");
   playerData.pseudo = pseudo;
   stepPseudo.classList.add("hidden");
   stepRole.classList.remove("hidden");
 };
 
-// Affichage du champ mot de passe si admin
 roleSelect.addEventListener("change", () => {
-  if (roleSelect.value === "admin") {
-    adminPassword.classList.remove("hidden");
-  } else {
-    adminPassword.classList.add("hidden");
-  }
+  adminPassword.classList.toggle("hidden", roleSelect.value !== "admin");
 });
 
-// Étape 2 : rôle
 btnValiderRole.onclick = async () => {
   const role = roleSelect.value;
   const pwd = adminPassword.value;
 
-  if (!role) {
-    alert("Choisis un rôle");
-    return;
-  }
+  if (!role) return alert("Choisis un rôle");
 
-  if (role === "admin") {
-    const snapshot = await get(ref(db, "players"));
-    const players = snapshot.val();
-    const alreadyAdmin = players && Object.values(players).some(p => p.role === "admin" && p.online);
-    if (alreadyAdmin) {
-      alert("Un admin est déjà en ligne.");
-      return;
-    }
-    if (pwd !== "tocard") {
-      alert("Mot de passe incorrect");
-      return;
-    }
-  }
-
-  // Pseudo unique
   const snapshot = await get(ref(db, "players"));
   const players = snapshot.val();
+
+  if (role === "admin") {
+    const adminExist = players && Object.values(players).some(p => p.role === "admin" && p.online);
+    if (adminExist) return alert("Un admin est déjà connecté.");
+    if (pwd !== "tocard") return alert("Mot de passe incorrect");
+  }
+
   for (const id in players) {
     if (players[id].pseudo === playerData.pseudo) {
       playerId = id;
@@ -103,15 +81,13 @@ btnValiderRole.onclick = async () => {
     }
   }
 
-  if (!playerId) {
-    playerId = push(ref(db, "players")).key;
-  }
+  if (!playerId) playerId = push(ref(db, "players")).key;
 
   playerData.role = role;
   const playerRef = ref(db, `players/${playerId}`);
   const playerObject = {
     pseudo: playerData.pseudo,
-    role: playerData.role,
+    role: role,
     online: true,
     points: players?.[playerId]?.points || 0
   };
@@ -127,40 +103,42 @@ btnValiderRole.onclick = async () => {
   startLobbyListener();
 };
 
-// 🎯 Listener Lobby
 function startLobbyListener() {
   onValue(ref(db, "players"), (snapshot) => {
     const players = snapshot.val() || {};
-    let adminStillConnected = false;
-
     adminList.innerHTML = "";
     playerList.innerHTML = "";
+
+    let adminStillOnline = false;
 
     for (const id in players) {
       const p = players[id];
       if (!p) continue;
 
-      const div = document.createElement("div");
-      div.className = p.role;
-      div.innerHTML = `<span class="emoji"></span><strong>${p.pseudo}</strong> <span class="points">${p.points ?? 0} pts</span>${p.online === false ? " [hors ligne]" : ""}`;
+      const el = document.createElement("div");
+      el.className = p.role;
+      const emoji = p.role === "admin" ? "👑" : "🎮";
+      let html = `<span class="emoji">${emoji}</span><strong>${p.pseudo}</strong>`;
+
+      if (p.role === "player") html += ` <span class="points">${p.points ?? 0} pts</span>`;
+      if (p.online === false) html += " [hors ligne]";
+      el.innerHTML = html;
+
       if (p.role === "admin") {
-        adminList.appendChild(div);
-        if (p.online) adminStillConnected = true;
+        adminList.appendChild(el);
+        if (p.online) adminStillOnline = true;
       } else {
-        playerList.appendChild(div);
+        playerList.appendChild(el);
       }
     }
 
-    if (playerData.role !== "admin" && !adminStillConnected) {
-      alert("L'admin s'est déconnecté. La partie est annulée.");
-      get(ref(db, "players")).then(() => {
-        remove(ref(db, "players")).then(() => location.reload());
-      });
+    if (playerData.role !== "admin" && !adminStillOnline) {
+      alert("L'admin s'est déconnecté. Partie annulée.");
+      remove(ref(db, "players")).then(() => location.reload());
     }
   });
 }
 
-// 🎬 Admin : prochaine question
 btnNextQuestion.onclick = () => {
   if (currentQuestionIndex >= questions.length) {
     alert("Toutes les questions ont été posées.");
@@ -175,6 +153,7 @@ btnNextQuestion.onclick = () => {
   let remaining = QUESTION_DURATION;
   timeLeft.textContent = remaining;
   clearInterval(questionTimer);
+
   questionTimer = setInterval(() => {
     remaining--;
     timeLeft.textContent = remaining;
