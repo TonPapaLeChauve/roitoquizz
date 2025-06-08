@@ -195,19 +195,23 @@ function listenQuestion() {
     }
 
     if (q.finished) {
+      // Fin de question : tout le monde voit la réponse finale
       questionZone.classList.add("hidden");
       playerAnswerZone.classList.add("hidden");
       adminAnswers.classList.add("hidden");
-      adminControls.classList.toggle("hidden", playerData.role !== "admin");
 
+      adminControls.classList.toggle("hidden", playerData.role !== "admin");
       finalAnswers.classList.remove("hidden");
-      loadFinalAnswers();
+
+      loadFinalAnswers(); // ✅ tout le monde voit ça
       return;
     }
 
+    // Question en cours
     questionZone.classList.remove("hidden");
     questionText.textContent = q.text;
     questionImage.src = q.image;
+
     finalAnswers.classList.add("hidden");
 
     const end = q.start + QUESTION_DURATION * 1000;
@@ -225,6 +229,7 @@ function listenQuestion() {
     if (playerData.role === "admin") loadAdminAnswers();
   });
 }
+
 
 // Réponse joueur
 btnAnswer.onclick = () => {
