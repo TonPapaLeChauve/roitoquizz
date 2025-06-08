@@ -1,0 +1,10 @@
+[
+  {
+    "question": "Quelle est la capitale de l’Australie ?",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Flag-map_of_Australia.svg/800px-Flag-map_of_Australia.svg.png"
+  },
+  {
+    "question": "Qui a peint la Joconde ?",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa.jpg/440px-Mona_Lisa.jpg"
+  }
+]
