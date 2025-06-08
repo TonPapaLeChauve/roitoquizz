@@ -149,9 +149,18 @@ function listenLobby() {
 }
 
 // ---- Questions + chrono ----
-btnNextQuestion.onclick = () => {
+btnNextQuestion.onclick = async () => {
   if (!questionsLoaded) return alert("Chargement des questions en cours...");
   if (currentQuestionIndex >= questions.length) return alert("Fin des questions");
+
+  // Effacer les réponses avant de poser une nouvelle question
+  const snap = await get(ref(db, "players"));
+  const players = snap.val() || {};
+  for (const id in players) {
+    if (players[id].role === "player") {
+      await update(ref(db, `players/${id}`), { answer: "" });
+    }
+  }
 
   const q = questions[currentQuestionIndex++];
   const now = Date.now();
@@ -168,13 +177,47 @@ btnNextQuestion.onclick = () => {
 
 
 function endQuestion() {
-  set(ref(db, "currentQuestion"), null);
+  set(ref(db, "currentQuestion"), null); // Efface la question en cours
+
+  if (playerData.role === "admin") {
+    loadFinalAnswers(); // Affiche les réponses des joueurs à la fin
+  }
+
+  // Cacher les interfaces
+  questionZone.classList.add("hidden");
+  playerAnswerZone.classList.add("hidden");
+  adminAnswers.classList.add("hidden");
 }
 
-function lookupEnd(when) {
-  const delay = when - Date.now();
-  timerInterval = setTimeout(endQuestion, delay);
+function loadFinalAnswers() {
+  onValue(ref(db, "players"), snap => {
+    const players = snap.val() || {};
+    playerList.innerHTML = "";
+
+    for (const id in players) {
+      const p = players[id];
+      if (!p.online || p.role !== "player") continue;
+
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = `🎮 <strong>${p.pseudo}</strong> - <span class="points">${p.points} pts</span><br><em>Réponse : ${p.answer || "(aucune)"}</em>`;
+
+      const plus = document.createElement("button");
+      plus.textContent = "+";
+      plus.style.fontSize = "0.8em";
+      plus.onclick = () => update(ref(db, `players/${id}`), { points: p.points + 1 });
+
+      const minus = document.createElement("button");
+      minus.textContent = "-";
+      minus.style.fontSize = "0.8em";
+      minus.onclick = () => update(ref(db, `players/${id}`), { points: Math.max(0, p.points - 1) });
+
+      row.append(plus, minus);
+      playerList.appendChild(row);
+    }
+  });
 }
+
 
 // côté joueur et admin : réaction à la question
 function listenQuestion() {
