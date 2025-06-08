@@ -24,17 +24,14 @@ let currentQuestionIndex = 0;
 let timerInterval = null;
 const QUESTION_DURATION = 30;
 let questions = [];
-
-// URL vers ton JSON sur GitHub
 let questionsLoaded = false;
 
+// URL vers ton JSON sur GitHub
 fetch("https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/questions.json")
-  .then(r => r.json())
-  .then(data => {
+  .then(r => r.json()).then(data => {
     questions = data;
     questionsLoaded = true;
   });
-
 
 // ----- DOM ↯
 const e = id => document.getElementById(id);
@@ -44,7 +41,6 @@ const lobby = e("lobby"), adminList = e("adminList"), playerList = e("playerList
 const adminControls = e("adminControls"), btnNextQuestion = e("btnNextQuestion");
 const questionZone = e("questionZone"), questionText = e("questionText"), questionImage = e("questionImage"), timeLeft = e("timeLeft");
 const playerAnswerZone = e("playerAnswerZone"), answerInput = e("answerInput"), btnAnswer = e("btnAnswer");
-const adminAnswers = e("adminAnswers");
 
 // ---- Étapes de connexion ----
 
@@ -99,6 +95,7 @@ btnValiderRole.onclick = async () => {
 
   listenLobby();
   if (role === "player") listenQuestion();
+  if (role === "admin") listenQuestion();
 };
 
 // ---- Lobby et points --------
@@ -119,16 +116,21 @@ function listenLobby() {
       row.className = "row";
       const emoji = p.role === "admin" ? "👑" : "🎮";
       row.innerHTML = `${emoji} <strong>${p.pseudo}</strong>`;
+
+      // Points affichés pour tous SAUF admin
       if (p.role === "player") {
         row.innerHTML += ` - <span class="points">${p.points} pts</span>`;
       }
 
+      // Boutons + et - que pour l'admin, et seulement pour joueurs
       if (playerData.role === "admin" && p.role === "player") {
         const plus = document.createElement("button");
         plus.textContent = "+";
+        plus.style.fontSize = "0.8em";
         plus.onclick = () => update(ref(db, `players/${id}`), { points: p.points + 1 });
         const minus = document.createElement("button");
         minus.textContent = "-";
+        minus.style.fontSize = "0.8em";
         minus.onclick = () => update(ref(db, `players/${id}`), { points: Math.max(0, p.points - 1) });
         row.append(plus, minus);
       }
@@ -141,7 +143,7 @@ function listenLobby() {
       }
     }
 
-    if (!adminOnline && playerData.role === "player") {
+    if (!adminOnline) {
       alert("L'administrateur s'est déconnecté. Partie annulée.");
       remove(ref(db, "players")).then(() => location.reload());
     }
@@ -149,6 +151,7 @@ function listenLobby() {
 }
 
 // ---- Questions + chrono ----
+
 btnNextQuestion.onclick = async () => {
   if (!questionsLoaded) return alert("Chargement des questions en cours...");
   if (currentQuestionIndex >= questions.length) return alert("Fin des questions");
@@ -175,49 +178,22 @@ btnNextQuestion.onclick = async () => {
   lookupEnd(now + QUESTION_DURATION * 1000);
 };
 
-
 function endQuestion() {
-  set(ref(db, "currentQuestion"), null); // Efface la question en cours
+  set(ref(db, "currentQuestion"), null);
 
-  if (playerData.role === "admin") {
-    loadFinalAnswers(); // Affiche les réponses des joueurs à la fin
-  }
+  // Afficher les réponses pour TOUS dans le lobby
+  loadFinalAnswers();
 
-  // Cacher les interfaces
+  // Cacher les zones question et réponses
   questionZone.classList.add("hidden");
   playerAnswerZone.classList.add("hidden");
-  adminAnswers.classList.add("hidden");
+  adminControls.classList.remove("hidden");
 }
 
-function loadFinalAnswers() {
-  onValue(ref(db, "players"), snap => {
-    const players = snap.val() || {};
-    playerList.innerHTML = "";
-
-    for (const id in players) {
-      const p = players[id];
-      if (!p.online || p.role !== "player") continue;
-
-      const row = document.createElement("div");
-      row.className = "row";
-      row.innerHTML = `🎮 <strong>${p.pseudo}</strong> - <span class="points">${p.points} pts</span><br><em>Réponse : ${p.answer || "(aucune)"}</em>`;
-
-      const plus = document.createElement("button");
-      plus.textContent = "+";
-      plus.style.fontSize = "0.8em";
-      plus.onclick = () => update(ref(db, `players/${id}`), { points: p.points + 1 });
-
-      const minus = document.createElement("button");
-      minus.textContent = "-";
-      minus.style.fontSize = "0.8em";
-      minus.onclick = () => update(ref(db, `players/${id}`), { points: Math.max(0, p.points - 1) });
-
-      row.append(plus, minus);
-      playerList.appendChild(row);
-    }
-  });
+function lookupEnd(when) {
+  const delay = when - Date.now();
+  timerInterval = setTimeout(endQuestion, delay);
 }
-
 
 // côté joueur et admin : réaction à la question
 function listenQuestion() {
@@ -226,7 +202,6 @@ function listenQuestion() {
     if (!q) {
       questionZone.classList.add("hidden");
       playerAnswerZone.classList.add("hidden");
-      adminAnswers.classList.add("hidden");
       return;
     }
     questionZone.classList.remove("hidden");
@@ -243,9 +218,7 @@ function listenQuestion() {
     }, 250);
 
     playerAnswerZone.classList.toggle("hidden", playerData.role !== "player");
-    adminAnswers.classList.toggle("hidden", playerData.role !== "admin");
-
-    if (playerData.role === "admin") loadAdminAnswers();
+    adminControls.classList.toggle("hidden", playerData.role !== "admin");
   });
 }
 
@@ -256,21 +229,36 @@ btnAnswer.onclick = () => {
     update(ref(db, `players/${playerId}`), { answer: ans });
 };
 
-// admin lit les réponses en temps réel
-function loadAdminAnswers() {
+// Afficher les réponses dans le lobby (pour tous les joueurs et l’admin)
+function loadFinalAnswers() {
   onValue(ref(db, "players"), snap => {
-    const pls = snap.val() || {};
-    adminAnswers.innerHTML = "";
-    Object.entries(pls).forEach(([id, p]) => {
-      if (p.role !== "player") return;
+    const players = snap.val() || {};
+    playerList.innerHTML = "";
+
+    for (const id in players) {
+      const p = players[id];
+      if (!p.online || p.role !== "player") continue;
+
       const row = document.createElement("div");
       row.className = "row";
-      row.innerHTML = `<strong>${p.pseudo} :</strong> ${p.answer || ""}`;
-      const btnVal = document.createElement("button");
-      btnVal.textContent = "+1";
-      btnVal.onclick = () => update(ref(db, `players/${id}`), { points: p.points + 1 });
-      row.appendChild(btnVal);
-      adminAnswers.appendChild(row);
-    });
+      row.innerHTML = `🎮 <strong>${p.pseudo}</strong> - <span class="points">${p.points} pts</span><br><em>Réponse : ${p.answer || "(aucune)"}</em>`;
+
+      // Si admin, boutons + / -
+      if (playerData.role === "admin") {
+        const plus = document.createElement("button");
+        plus.textContent = "+";
+        plus.style.fontSize = "0.8em";
+        plus.onclick = () => update(ref(db, `players/${id}`), { points: p.points + 1 });
+
+        const minus = document.createElement("button");
+        minus.textContent = "-";
+        minus.style.fontSize = "0.8em";
+        minus.onclick = () => update(ref(db, `players/${id}`), { points: Math.max(0, p.points - 1) });
+
+        row.append(plus, minus);
+      }
+
+      playerList.appendChild(row);
+    }
   });
 }
