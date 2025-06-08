@@ -1,52 +1,38 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-import { getDatabase, ref, set, onValue, push, onDisconnect, update, remove, get } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+import {
+  getDatabase, ref, set, push, onValue, onDisconnect,
+  update, remove, get
+} from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAwi1VHv7jaaPPyanv90CCheM1mZ-xNr58",
-  authDomain: "roidestocards-d0084.firebaseapp.com",
-  databaseURL: "https://roidestocards-d0084-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "roidestocards-d0084",
-  storageBucket: "roidestocards-d0084.appspot.com",
-  messagingSenderId: "120053524190",
-  appId: "1:120053524190:web:c68520412faff06836044f"
+const config = {
+  apiKey: "...", authDomain: "...", databaseURL: "...",
+  projectId: "...", storageBucket: "...", messagingSenderId: "...", appId: "..."
 };
-
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(config);
 const db = getDatabase(app);
 
-let playerId = null;
-let playerData = { pseudo: null, role: null };
-let currentQuestionIndex = 0;
-let questionTimer = null;
+let playerId, playerData = {};
+let currentQuestionIndex = 0, questionTimer;
+
 const QUESTION_DURATION = 30;
-
-// DOM Elements
-const stepPseudo = document.getElementById("stepPseudo");
-const pseudoInput = document.getElementById("pseudoInput");
-const btnPseudo = document.getElementById("btnPseudo");
-
-const stepRole = document.getElementById("stepRole");
-const roleSelect = document.getElementById("roleSelect");
-const adminPassword = document.getElementById("adminPassword");
-const btnValiderRole = document.getElementById("btnValiderRole");
-
-const lobby = document.getElementById("lobby");
-const adminList = document.getElementById("adminList");
-const playerList = document.getElementById("playerList");
-
-const adminControls = document.getElementById("adminControls");
-const btnNextQuestion = document.getElementById("btnNextQuestion");
-const questionZone = document.getElementById("questionZone");
-const questionText = document.getElementById("questionText");
-const questionImage = document.getElementById("questionImage");
-const timeLeft = document.getElementById("timeLeft");
-
+const QUESTIONS_URL = "https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/questions.json";
 let questions = [];
-fetch("https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/questions.json")
-  .then(res => res.json())
-  .then(data => questions = data)
-  .catch(err => console.error("Erreur chargement questions :", err));
 
+// DOM
+const stepPseudo = $`stepPseudo`, pseudoInput = $`pseudoInput`, btnPseudo = $`btnPseudo`;
+const stepRole = $`stepRole`, roleSelect = $`roleSelect`, adminPassword = $`adminPassword`, btnValiderRole = $`btnValiderRole`;
+const lobby = $`lobby`, adminList = $`adminList`, playerList = $`playerList`;
+const adminControls = $`adminControls`, btnNextQuestion = $`btnNextQuestion`;
+const questionZone = $`questionZone`, questionText = $`questionText`, questionImage = $`questionImage`, timeLeft = $`timeLeft`;
+const playerAnswerZone = $`playerAnswerZone`, answerInput = $`answerInput`, btnAnswer = $`btnAnswer`;
+const adminAnswers = $`adminAnswers`;
+
+function $(id){return document.getElementById(id);}
+
+// Pré-chargement des questions
+fetch(QUESTIONS_URL).then(r=>r.json()).then(d=>questions=d);
+
+// 1️⃣ Pseudo
 btnPseudo.onclick = () => {
   const pseudo = pseudoInput.value.trim();
   if (!pseudo) return alert("Entre un pseudo");
@@ -55,112 +41,131 @@ btnPseudo.onclick = () => {
   stepRole.classList.remove("hidden");
 };
 
-roleSelect.addEventListener("change", () => {
-  adminPassword.classList.toggle("hidden", roleSelect.value !== "admin");
-});
-
+// 2️⃣ Rôle
+roleSelect.onchange = () => adminPassword.classList.toggle("hidden", roleSelect.value !== "admin");
 btnValiderRole.onclick = async () => {
   const role = roleSelect.value;
   const pwd = adminPassword.value;
-
   if (!role) return alert("Choisis un rôle");
 
-  const snapshot = await get(ref(db, "players"));
-  const players = snapshot.val();
+  const snap = await get(ref(db, "players"));
+  const pls = snap.val() || {};
 
-  if (role === "admin") {
-    const adminExist = players && Object.values(players).some(p => p.role === "admin" && p.online);
-    if (adminExist) return alert("Un admin est déjà connecté.");
-    if (pwd !== "tocard") return alert("Mot de passe incorrect");
+  if (role==="admin") {
+    if (Object.values(pls).some(p=>p.role==="admin"&&p.online)) return alert("Déjà un admin connecté");
+    if (pwd!=="tocard") return alert("Mot de passe admin incorrect");
   }
 
-  for (const id in players) {
-    if (players[id].pseudo === playerData.pseudo) {
-      playerId = id;
-      break;
-    }
-  }
-
+  Object.entries(pls).forEach(([id,p])=>{
+    if (p.pseudo===playerData.pseudo && !p.online) playerId = id;
+  });
   if (!playerId) playerId = push(ref(db, "players")).key;
 
   playerData.role = role;
   const playerRef = ref(db, `players/${playerId}`);
-  const playerObject = {
-    pseudo: playerData.pseudo,
-    role: role,
-    online: true,
-    points: players?.[playerId]?.points || 0
-  };
-
-  set(playerRef, playerObject);
+  set(playerRef, { pseudo: playerData.pseudo, role, online: true, points: pls?.[playerId]?.points || 0, answer: "" });
   onDisconnect(playerRef).update({ online: false });
 
   stepRole.classList.add("hidden");
   lobby.classList.remove("hidden");
+  if (role==="admin") adminControls.classList.remove("hidden");
 
-  if (role === "admin") adminControls.classList.remove("hidden");
-
-  startLobbyListener();
+  listenLobby();
+  if (role==="player") answerLogic();
 };
 
-function startLobbyListener() {
-  onValue(ref(db, "players"), (snapshot) => {
-    const players = snapshot.val() || {};
-    adminList.innerHTML = "";
-    playerList.innerHTML = "";
+// Sync lobby + points + déconnexion admin
+function listenLobby() {
+  onValue(ref(db, "players"), snap => {
+    const pls = snap.val() || {};
+    adminList.innerHTML=""; playerList.innerHTML="";
 
-    let adminStillOnline = false;
-
-    for (const id in players) {
-      const p = players[id];
-      if (!p) continue;
-
-      const el = document.createElement("div");
-      el.className = p.role;
-      const emoji = p.role === "admin" ? "👑" : "🎮";
-      let html = `<span class="emoji">${emoji}</span><strong>${p.pseudo}</strong>`;
-
-      if (p.role === "player") html += ` <span class="points">${p.points ?? 0} pts</span>`;
-      if (p.online === false) html += " [hors ligne]";
-      el.innerHTML = html;
-
-      if (p.role === "admin") {
-        adminList.appendChild(el);
-        if (p.online) adminStillOnline = true;
-      } else {
-        playerList.appendChild(el);
-      }
+    let adminOnline = false;
+    for (const id in pls) {
+      const p = pls[id];
+      if (!p.online) continue;
+      const e = document.createElement("div");
+      e.className="row";
+      e.innerHTML = `${p.role==="admin"?"👑":"🎮"}<strong>${p.pseudo}</strong>` +
+        (p.role!=="admin"?`<span class="points"> - ${p.points} pts</span>`:"") +
+        (id===playerId? " <i>(moi)</i>":"");
+      (p.role==="admin"? adminList : playerList).appendChild(e);
+      if (p.role==="admin") adminOnline = true;
     }
 
-    if (playerData.role !== "admin" && !adminStillOnline) {
-      alert("L'admin s'est déconnecté. Partie annulée.");
-      remove(ref(db, "players")).then(() => location.reload());
+    if (!adminOnline && playerData.role==="player"){
+      alert("Admin déconnecté, partie annulée.");
+      remove(ref(db, "players")).then(_=>location.reload());
     }
   });
 }
 
+// 🔢 Admin lancement question
 btnNextQuestion.onclick = () => {
-  if (currentQuestionIndex >= questions.length) {
-    alert("Toutes les questions ont été posées.");
-    return;
-  }
-
-  const q = questions[currentQuestionIndex];
-  questionText.textContent = q.question;
-  questionImage.src = q.image;
-  questionZone.classList.remove("hidden");
-
-  let remaining = QUESTION_DURATION;
-  timeLeft.textContent = remaining;
-  clearInterval(questionTimer);
-
-  questionTimer = setInterval(() => {
-    remaining--;
-    timeLeft.textContent = remaining;
-    if (remaining <= 0) {
-      clearInterval(questionTimer);
-      questionZone.classList.add("hidden");
-      currentQuestionIndex++;
-    }
-  }, 1000);
+  if (currentQuestionIndex>=questions.length) return alert("Fin des questions");
+  const q = questions[currentQuestionIndex++];
+  const now = Date.now();
+  set(ref(db, "currentQuestion"), { text:q.question, image:q.image, start:now });
+  questionTimer = setTimeout(endQuestion, QUESTION_DURATION*1000);
+  showQuestion(true);
 };
+
+// Fin chrono
+function endQuestion(){
+  set(ref(db, "currentQuestion"), null);
+  showQuestion(false);
+}
+
+// Affichage question/chrono / réponses admin ou joueur
+onValue(ref(db, "currentQuestion"), snap => {
+  const q = snap.val();
+  if (!q) return showQuestion(false);
+
+  showQuestion(true);
+  questionText.textContent = q.text;
+  questionImage.src = q.image;
+
+  const end = q.start + QUESTION_DURATION*1000;
+  const iv = setInterval(()=>{
+    const s = Math.max(0, Math.ceil((end-Date.now())/1000));
+    timeLeft.textContent = s;
+    if (s<=0) clearInterval(iv);
+  },200);
+
+  onValue(ref(db, "players"), snap2=>{
+    const pls = snap2.val()||{};
+    adminAnswers.innerHTML = "";
+    for (const id in pls){
+      const p = pls[id];
+      if(p.role==="player"){
+        const row = document.createElement("div");
+        row.className="row";
+        row.innerHTML = `<strong>${p.pseudo} :</strong> ${p.answer||""}`;
+        if (playerData.role==="admin"){
+          const btn = document.createElement("button");
+          btn.textContent="+1";
+          btn.className="validateBtn";
+          btn.onclick = ()=> update(ref(db, `players/${id}`), { points: p.points+1 });
+          row.appendChild(btn);
+        }
+        adminAnswers.appendChild(row);
+      }
+    }
+  });
+});
+
+// Basculer UI
+function showQuestion(active){
+  lobby.classList.toggle("hidden", active);
+  questionZone.classList.toggle("hidden", !active);
+  adminAnswers.classList.toggle("hidden", !(active && playerData.role==="admin"));
+  playerAnswerZone.classList.toggle("hidden", active && playerData.role==="player");
+}
+
+// 🖋️ Réponse joueur
+function answerLogic(){
+  btnAnswer.onclick = ()=>{
+    const a = answerInput.value.trim();
+    if(a) update(ref(db, `players/${playerId}`), { answer: a });
+  };
+}
