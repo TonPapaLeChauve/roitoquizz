@@ -64,7 +64,7 @@ btnValiderRole.onclick = async () => {
 
   if (role === "admin") {
     if (Object.values(players).some(p => p.role === "admin" && p.online)) return alert("Un admin est déjà connecté");
-    if (pwd !== "tocard") return alert("Mot de passe incorrect");
+    if (pwd !== "Kevin") return alert("Mot de passe incorrect");
   }
 
   for (const id in players) {
