@@ -5,7 +5,7 @@
     "reponse": "John Lennon"
   },
   {
-    "question": "Qui a peint la nuit étoilé ?",
+    "question": "Qui a peint 'la nuit étoilé' ?",
     "image": "https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/images/2.jpg",
     "reponse" : "Vincent Van Gogh"
   },
@@ -55,7 +55,7 @@
     "reponse": "Winston Churchill"
   },
   {
-    "question": "Quelle le modèle de cette voiture ?",
+    "question": "Quelle est le modèle de cette voiture ?",
     "image": "https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/images/12.jpg",
     "reponse": "Porsche 911"
   },
@@ -98,5 +98,10 @@
     "question": "Quel est le nom de cet instrument ?",
     "image": "https://raw.githubusercontent.com/TonPapaLeChauve/roitoquizz/main/images/20.jpg",
     "reponse": "Trombone"
+  },
+  {
+    "question": "En attente du lancement de la partie par l'hôte",
+    "image": "",
+    "reponse": ""
   }
 ]
